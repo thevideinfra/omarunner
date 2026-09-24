@@ -6,6 +6,7 @@ import qs.Commons
 import qs.Ui
 import "RunnerModel.js" as RunnerModel
 import "SourceModel.js" as SourceModel
+import "SettingsModel.js" as SettingsModel
 
 Item {
   id: root
@@ -41,6 +42,20 @@ Item {
   function ping() { return "ok" }
 
   property string fontFamily: Style.font.menuFamily
+  // Settings page choices (omarunner.json "settings"), merged over defaults.
+  readonly property var settings: SettingsModel.resolve(sourceConfig.config)
+  // Text uses the chosen family; icon glyphs stay on the Nerd Font menu family.
+  readonly property string textFamily: root.settings.fontFamily || root.fontFamily
+  // omarunner draws its text smaller than the shell's type scale. Scaling
+  // here keeps the system font settings untouched.
+  property real fontScale: root.settings.fontScale / 100
+  function scaledFont(px) { return Math.max(1, Math.round(px * root.fontScale)) }
+  readonly property int fontCaption: scaledFont(Style.font.caption)
+  readonly property int fontBodySmall: scaledFont(Style.font.bodySmall)
+  readonly property int fontBody: scaledFont(Style.font.body)
+  readonly property int fontTitle: scaledFont(Style.font.title)
+  readonly property int fontHeading: scaledFont(Style.font.heading)
+  readonly property int fontDisplayLarge: scaledFont(Style.font.displayLarge)
   // JSONC menu definitions. The shell parses both at startup and merges
   // the user file on top of the defaults, so the keybind → IPC → visible
   // path doesn't have to shell out to bash + jq on every open.
@@ -73,7 +88,7 @@ Item {
   property color background: Color.menu.background
   property color foreground: Color.menu.text
   property color border: Color.menu.border
-  property var borderSpec: Border.surfaceSpec("menu", "border", border, Math.max(1, Style.space(2)))
+  property var borderSpec: Border.surfaceSpec("menu", "border", border, root.settings.border)
   property color scrim: Color.menu.scrim
   property color selectedBackground: Color.menu.selectedBackground
   property color selectedText: Color.menu.selectedText
@@ -82,26 +97,37 @@ Item {
   readonly property real rowReservedBorderLeft: Border.left(selectedBorderSpec)
   readonly property real rowReservedBorderRight: Border.right(selectedBorderSpec)
   readonly property int cornerRadius: Style.cornerRadius
-  property int contentMargin: Style.spacing.panelPadding
-  property int headerHeight: Math.max(Style.space(34), Style.font.title + Style.spacing.controlPaddingY * 2)
-  property int contentSpacing: Style.spacing.md
-  property int baseRowHeight: Math.max(Style.space(50), Style.font.body + Style.spacing.rowPaddingX * 2)
-  property int detailRowHeight: Math.max(Style.space(58), Style.font.body + Style.font.caption + Style.spacing.rowPaddingX * 2)
+  property int contentMargin: Style.space(8)
+  property int headerHeight: Math.max(Style.space(28), root.fontHeading + Style.space(8))
+  property int contentSpacing: Style.space(4)
+  // KRunner-style compact rows: label and detail share one line, so every
+  // row is the same height and the list stays short.
+  property int compactRowHeight: Math.max(Style.space(root.settings.density), root.fontBody + Style.space(10))
+  property int baseRowHeight: compactRowHeight
+  // Rows shown before the list folds and scrolls.
+  property int maxVisibleRows: root.settings.rows
   // How much of the first hidden row stays visible at the fold — enough to
   // read as a cut-off row rather than a bottom border.
   property int rowPeek: Math.round(baseRowHeight * 0.55)
-  property int rowSpacing: Style.spacing.xs
+  property int rowSpacing: 0
   property int dividerHeight: Style.space(17)
+  // Hairline gap between category groups in a root search.
+  property int groupGapHeight: Style.space(5)
+  // The KRunner category column: section captions right-aligned on the left.
+  readonly property bool showCategories: root.activeMenu === "root" && !root.collapsed && root.settings.categories
+  property int categoryWidth: root.showCategories ? Style.space(120) : 0
   property bool searchDivider: false
   property int layoutSerial: 0
-  property var sources: [fileSource]
+  property var sources: [calcSource, locationSource, commandSource, killSource, clipboardSource, fileSource, recentSource]
   property var sourceRows: ({})
   property int searchSerial: 0
   property var sectionLabels: ({})
+  // Section of the first row: no divider is drawn above it.
+  property string firstSection: ""
   // At the root with no query omarunner is a bare input line: no row area, and
   // no spacing under the header to hint at one.
   readonly property bool collapsed: root.activeMenu === "root" && !root.filterText.trim()
-  property int cardWidth: Math.min((root.activeMenu === "trigger.capture.screenrecord" || root.activeMenu === "style.font") ? Style.space(520) : Style.space(300), panel.width - Style.gapsOut * 2)
+  property int cardWidth: Math.min(Style.space(root.settings.width), panel.width - Style.gapsOut * 2)
   property int visibleRowsHeight: root.collapsed ? 0 : rowListHeight(layoutSerial, displayModel.count, filterText, searchDivider)
   property int cardHeight: Math.min(contentMargin * 2 + headerHeight + (root.collapsed ? 0 : contentSpacing + visibleRowsHeight), panel.height - Style.gapsOut * 2)
 
@@ -112,9 +138,11 @@ Item {
     Util.execDetached(command)
   }
 
-  // Menu rows only surface their detail while a search is narrowing them.
-  function rowHeightForDetail(detail) {
-    return root.filterText && detail ? root.detailRowHeight : root.baseRowHeight
+  // Height of the divider drawn above the first row of a section.
+  function sectionGapHeight(section) {
+    if (section === "drilldown") return root.dividerHeight
+    if (section.indexOf("group:") === 0 || section.indexOf("source:") === 0) return root.groupGapHeight
+    return 0
   }
 
   // Height the card can devote to rows before running off the screen — or
@@ -131,7 +159,10 @@ Item {
     // there and root searches grow by the screen budget alone.
     if (panel.maxRowsHeight >= 0) available = Math.min(available, panel.maxRowsHeight)
     // A card that swallows the whole screen reads as a page, not a menu.
-    return Math.min(available, Math.round(panel.height * 0.7))
+    available = Math.min(available, Math.round(panel.height * 0.7))
+    // Start short: past maxVisibleRows the list folds and scrolls.
+    var rowsCap = root.maxVisibleRows * root.baseRowHeight + (root.maxVisibleRows - 1) * root.rowSpacing + root.rowPeek
+    return Math.min(available, rowsCap)
   }
 
   // When every row fits, the list gets its full height. When they don't,
@@ -162,8 +193,9 @@ Item {
     for (var i = 0; i < displayModel.count; i++) {
       var row = displayModel.get(i)
       if (i > 0) total += root.rowSpacing
-      if ((row.section === "drilldown" || row.section.indexOf("source:") === 0) && previousSection !== row.section) total += root.dividerHeight
-      total += root.rowHeightForDetail(row.detail)
+      // The first group of a root search gets no divider above it.
+      if (i > 0 && previousSection !== row.section) total += root.sectionGapHeight(row.section)
+      total += root.baseRowHeight
       previousSection = row.section
       totals.push(total)
     }
@@ -204,7 +236,7 @@ Item {
     root.providerRevision += 1
     root.providersLoaded = ({})
     root.providerQueue = []
-    root.items = mergedMenu.items
+    root.items = RunnerModel.withSessionAliases(mergedMenu.items)
     root.itemOrder = mergedMenu.itemOrder
     root.rowsLoaded = true
     root.evaluateGuards()
@@ -419,10 +451,11 @@ Item {
 
     var built = RunnerModel.buildRows(root.items, root.itemOrder, root.whenResults,
                                       root.checkedResults, root.activeMenu, root.filterText,
-                                      root.sourceGroups())
+                                      root.sourceGroups(), root.hiddenGroups(), root.settings.fuzzy)
     root.activeMenu = built.activeMenu
     root.searchDivider = built.searchDivider
     root.sectionLabels = built.sectionLabels || ({})
+    root.firstSection = built.rows.length > 0 ? String(built.rows[0].section || "") : ""
 
     for (var k = 0; k < built.rows.length; k++) displayModel.append(built.rows[k])
     layoutSerial += 1
@@ -498,11 +531,22 @@ Item {
     for (var i = 0; i < root.sources.length; i++) if (root.sources[i].cancel) root.sources[i].cancel()
   }
 
+  // A source whose prefix claims the query ("kill ", "cb ", ">") runs alone.
+  function sourceClaims(source, query) {
+    return source.enabled && typeof source.claims === "function" && source.claims(query)
+  }
+
   function runSources() {
     var query = root.filterText.trim()
     if (!query || root.activeMenu !== "root") return
-    for (var i = 0; i < root.sources.length; i++)
-      if (root.sources[i].enabled) root.sources[i].search(query, root.searchSerial)
+    var claimed = false
+    for (var c = 0; c < root.sources.length; c++) if (root.sourceClaims(root.sources[c], query)) claimed = true
+    for (var i = 0; i < root.sources.length; i++) {
+      var s = root.sources[i]
+      if (!s.enabled) continue
+      if (claimed && !root.sourceClaims(s, query)) continue
+      s.search(query, root.searchSerial)
+    }
   }
 
   function acceptSourceRows(sourceId, serial, rows) {
@@ -519,9 +563,15 @@ Item {
     for (var i = 0; i < root.sources.length; i++) {
       var s = root.sources[i]
       if (!s.enabled) continue
-      groups.push({ sourceId: s.sourceId, groupLabel: s.groupLabel, maxRows: s.maxRows, rows: root.sourceRows[s.sourceId] || [] })
+      groups.push({ sourceId: s.sourceId, groupLabel: s.groupLabel, maxRows: s.maxRows, rows: root.sourceRows[s.sourceId] || [],
+        leading: s.leading === true, exclusive: root.sourceClaims(s, root.filterText.trim()) })
     }
     return groups
+  }
+
+  // Menu-tree groups the Sources page switched off, for buildRows.
+  function hiddenGroups() {
+    return { apps: !sourceConfig.isEnabled("apps"), menu: !sourceConfig.isEnabled("menu"), session: !sourceConfig.isEnabled("session") }
   }
 
   // Re-renders the virtual "Sources" menu (and its per-source toggle rows)
@@ -532,7 +582,7 @@ Item {
     var order = []
     for (var i = 0; i < root.itemOrder.length; i++) {
       var id = root.itemOrder[i]
-      if (id === "sources" || id.indexOf("sources.") === 0) continue
+      if (id === "sources" || id.indexOf("sources.") === 0 || id === "settings" || id.indexOf("settings.") === 0) continue
       items[id] = root.items[id]
       order.push(id)
     }
@@ -540,7 +590,10 @@ Item {
       title: "Sources", target: "", description: "Choose what omarunner searches", action: "", provider: "",
       aliases: ["search sources", "runner"], when: "", checked: "", order: order.length }
     order.push("sources")
-    var sourceList = []
+    // Applications and Omarchy are built into buildRows, not registered
+    // sources, but they toggle through the same config keys.
+    var sourceList = [{ sourceId: "apps", groupLabel: "Applications" }, { sourceId: "menu", groupLabel: "Omarchy" },
+                      { sourceId: "session", groupLabel: "Session" }]
     for (var s = 0; s < root.sources.length; s++)
       sourceList.push({ sourceId: root.sources[s].sourceId, groupLabel: root.sources[s].groupLabel })
     var rows = SourceModel.sourcePageRows(sourceConfig.config, sourceList)
@@ -552,6 +605,20 @@ Item {
       order.push(rows[r].id)
       checked[rows[r].id] = sourceConfig.isEnabled(rows[r].value)
     }
+    // The Settings page: preset submenus and toggles, ✓ from the config.
+    items["settings"] = { id: "settings", parent: "root", kind: "menu", icon: "\uf013", iconFont: "", label: "Settings",
+      title: "Settings", target: "", description: "Size, font, look and matching", action: "", provider: "",
+      aliases: ["preferences", "omarunner settings"], when: "", checked: "", order: order.length }
+    order.push("settings")
+    // Resolved here, not via root.settings: this runs from onConfigChanged at
+    // startup, before that binding has a value.
+    var page = SettingsModel.pageRows(SettingsModel.resolve(sourceConfig.config))
+    for (var p = 0; p < page.rows.length; p++) {
+      page.rows[p].order = order.length
+      items[page.rows[p].id] = page.rows[p]
+      order.push(page.rows[p].id)
+    }
+    for (var pk in page.checked) checked[pk] = page.checked[pk]
     root.items = items
     root.itemOrder = order
     root.checkedResults = checked
@@ -572,6 +639,26 @@ Item {
     root.rebuildDisplay()
     root.invalidateVolatileProvider(id)
     root.loadProviderForMenu(id)
+  }
+
+  // Ctrl+1…Ctrl+9 → row 0…8, else -1. With Shift held Qt reports the shifted
+  // symbol (Key_Exclam for 1 on a US layout), so those map back too.
+  function quickLaunchIndex(event) {
+    if (!(event.modifiers & Qt.ControlModifier)) return -1
+    if (event.key >= Qt.Key_1 && event.key <= Qt.Key_9) return event.key - Qt.Key_1
+    var shifted = [Qt.Key_Exclam, Qt.Key_At, Qt.Key_NumberSign, Qt.Key_Dollar, Qt.Key_Percent,
+                   Qt.Key_AsciiCircum, Qt.Key_Ampersand, Qt.Key_Asterisk, Qt.Key_ParenLeft]
+    return (event.modifiers & Qt.ShiftModifier) ? shifted.indexOf(event.key) : -1
+  }
+
+  // The header's gear button and Ctrl+S open the Settings page.
+  function openSettingsPage() {
+    if (root.activeMenu !== "settings") root.setActiveMenu("settings", true, false)
+  }
+
+  // The header's filter button and Ctrl+, both land on the Sources page.
+  function openSourcesPage() {
+    if (root.activeMenu !== "sources") root.setActiveMenu("sources", true, false)
   }
 
   function goBack() {
@@ -604,6 +691,12 @@ Item {
       appSource.launch(appId, label)
     } else if (row.kind === "source-toggle") {
       sourceConfig.toggle(row.value)
+    } else if (row.kind === "setting-option") {
+      // Pick, then return to the Settings page, whose row shows the new value.
+      sourceConfig.apply(SettingsModel.applyOption(sourceConfig.config, row.value))
+      root.goBack()
+    } else if (row.kind === "setting-toggle") {
+      sourceConfig.apply(SettingsModel.toggled(sourceConfig.config, row.value))
     } else if (row.kind === "source") {
       var source = null
       for (var i = 0; i < root.sources.length; i++) if (root.sources[i].sourceId === row.sourceId) source = root.sources[i]
@@ -688,8 +781,40 @@ Item {
     }
   }
 
+  CalcSource {
+    id: calcSource
+    onResults: function(serial, rows) { root.acceptSourceRows(calcSource.sourceId, serial, rows) }
+  }
+
+  LocationSource {
+    id: locationSource
+    onResults: function(serial, rows) { root.acceptSourceRows(locationSource.sourceId, serial, rows) }
+  }
+
+  CommandSource {
+    id: commandSource
+    onResults: function(serial, rows) { root.acceptSourceRows(commandSource.sourceId, serial, rows) }
+  }
+
+  KillSource {
+    id: killSource
+    onResults: function(serial, rows) { root.acceptSourceRows(killSource.sourceId, serial, rows) }
+  }
+
+  ClipboardSource {
+    id: clipboardSource
+    onResults: function(serial, rows) { root.acceptSourceRows(clipboardSource.sourceId, serial, rows) }
+  }
+
+  RecentSource {
+    id: recentSource
+    fuzzy: root.settings.fuzzy
+    onResults: function(serial, rows) { root.acceptSourceRows(recentSource.sourceId, serial, rows) }
+  }
+
   FileSource {
     id: fileSource
+    fuzzy: root.settings.fuzzy
     onResults: function(serial, rows) { root.acceptSourceRows(fileSource.sourceId, serial, rows) }
   }
 
@@ -823,7 +948,7 @@ Item {
     var guardItems = ({})
     for (var gid in root.items) {
       var gentry = root.items[gid]
-      if (gentry && gentry.kind !== "source-toggle") guardItems[gid] = gentry
+      if (gentry && !RunnerModel.isConfigRow(gentry)) guardItems[gid] = gentry
     }
     var script = RunnerModel.guardScript(guardItems)
     if (!script) {
@@ -952,7 +1077,22 @@ Item {
             return
           }
 
-          if (event.key === Qt.Key_Delete) {
+          if (root.quickLaunchIndex(event) >= 0) {
+            // COSMIC-style quick launch; Shift still reaches a source's alternate action.
+            var quick = root.quickLaunchIndex(event)
+            if (quick < displayModel.count) {
+              root.selectedIndex = quick
+              root.cursorActive = true
+              root.activateIndex(quick, false, event.modifiers)
+            }
+            event.accepted = true
+          } else if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_S) {
+            root.openSettingsPage()
+            event.accepted = true
+          } else if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_Comma) {
+            root.openSourcesPage()
+            event.accepted = true
+          } else if (event.key === Qt.Key_Delete) {
             root.requestDeleteSelected()
             event.accepted = true
           } else if (event.key === Qt.Key_Escape) {
@@ -1021,18 +1161,93 @@ Item {
           radius: root.cornerRadius
           color: "transparent"
 
+          // KRunner-style filter button: opens the Sources page.
+          Rectangle {
+            id: filterButton
+            readonly property bool active: root.activeMenu === "sources"
+            width: root.headerHeight
+            height: root.headerHeight
+            radius: root.cornerRadius
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+            color: active ? root.selectedBackground : (filterMouse.containsMouse ? Util.alpha(root.foreground, 0.08) : "transparent")
+
+            Text {
+              anchors.centerIn: parent
+              textFormat: Text.PlainText
+              text: "\uf1de"
+              color: filterButton.active ? root.selectedText : root.foreground
+              opacity: filterButton.active || filterMouse.containsMouse ? 1 : 0.7
+              font.family: root.fontFamily
+              font.pixelSize: root.fontTitle
+            }
+
+            MouseArea {
+              id: filterMouse
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: root.openSourcesPage()
+            }
+          }
+
+          Text {
+            id: searchGlyph
+            textFormat: Text.PlainText
+            text: "\uf002"
+            anchors.left: filterButton.right
+            anchors.leftMargin: Style.space(10)
+            anchors.verticalCenter: parent.verticalCenter
+            color: root.foreground
+            opacity: 0.45
+            font.family: root.fontFamily
+            font.pixelSize: root.fontBody
+          }
+
+          // Settings gear: size, font, look and fuzzy matching.
+          Rectangle {
+            id: gearButton
+            readonly property bool active: root.activeMenu === "settings" || root.activeMenu.indexOf("settings.") === 0
+            width: root.headerHeight
+            height: root.headerHeight
+            radius: root.cornerRadius
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            color: active ? root.selectedBackground : (gearMouse.containsMouse ? Util.alpha(root.foreground, 0.08) : "transparent")
+
+            Text {
+              anchors.centerIn: parent
+              textFormat: Text.PlainText
+              text: "\uf013"
+              color: gearButton.active ? root.selectedText : root.foreground
+              opacity: gearButton.active || gearMouse.containsMouse ? 1 : 0.7
+              font.family: root.fontFamily
+              font.pixelSize: root.fontTitle
+            }
+
+            MouseArea {
+              id: gearMouse
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: root.openSettingsPage()
+            }
+          }
+
           Text {
             textFormat: Text.PlainText
-            anchors.left: parent.left
-            anchors.right: parent.right
+            anchors.left: searchGlyph.right
+            anchors.leftMargin: Style.space(10)
+            anchors.right: gearButton.left
+            anchors.rightMargin: Style.space(8)
             anchors.verticalCenter: parent.verticalCenter
             text: root.filterText || ((root.activeMenu === "root")
               ? "Search…"
               : ((root.item(root.activeMenu) ? (root.item(root.activeMenu).title || root.item(root.activeMenu).label) : "Go") + "…"))
             color: root.foreground
             opacity: root.filterText ? 1 : 0.58
-            font.family: root.fontFamily
-            font.pixelSize: Style.font.heading
+            font.family: root.textFamily
+            font.pixelSize: root.fontHeading
             elide: Text.ElideRight
           }
 
@@ -1056,27 +1271,17 @@ Item {
             section.delegate: Item {
               required property string section
 
-              width: ListView.view.width
-              height: (section === "drilldown" || section.indexOf("source:") === 0) ? root.dividerHeight : 0
-              visible: section === "drilldown" || section.indexOf("source:") === 0
+              // Captions live in the row's category column; this only draws
+              // the hairline between groups, never above the first one.
+              readonly property bool drawn: section !== root.firstSection && root.sectionGapHeight(section) > 0
 
-              Text {
-                id: captionText
-                visible: section.indexOf("source:") === 0
-                text: root.sectionLabels[section] || ""
-                anchors.left: parent.left
-                anchors.leftMargin: Style.space(4)
-                anchors.verticalCenter: parent.verticalCenter
-                color: root.foreground
-                opacity: 0.6
-                font.family: root.fontFamily
-                font.pixelSize: Style.font.caption
-                textFormat: Text.PlainText
-              }
+              width: ListView.view.width
+              height: drawn ? root.sectionGapHeight(section) : 0
+              visible: drawn
 
               Rectangle {
-                anchors.left: section.indexOf("source:") === 0 ? captionText.right : parent.left
-                anchors.leftMargin: section.indexOf("source:") === 0 ? Style.space(8) : Style.space(4)
+                anchors.left: parent.left
+                anchors.leftMargin: Style.space(4)
                 anchors.right: parent.right
                 anchors.rightMargin: Style.space(4)
                 anchors.verticalCenter: parent.verticalCenter
@@ -1085,7 +1290,7 @@ Item {
               }
             }
 
-            delegate: BorderSurface {
+            delegate: Item {
               id: row
               required property int index
               required property string itemId
@@ -1099,6 +1304,7 @@ Item {
               required property string detail
               required property string path
               required property string action
+              required property string section
               required property int childCount
 
               readonly property bool hasCursor: root.cursorActive && row.index === root.selectedIndex
@@ -1107,134 +1313,156 @@ Item {
               // image path fall back to their themed icon name.
               readonly property bool usesImage: row.isApp || row.kind === "source"
               readonly property bool hasIcon: row.icon.length > 0 || row.usesImage
+              readonly property int iconSize: Math.round(root.baseRowHeight * 0.6)
+              readonly property color textColor: row.hasCursor ? root.selectedText : root.foreground
 
               width: ListView.view.width
-              height: root.rowHeightForDetail(row.detail)
-              radius: root.cornerRadius
-              color: row.hasCursor ? root.selectedBackground : "transparent"
-              borderSpec: row.hasCursor ? root.selectedBorderSpec : Border.none()
+              height: root.baseRowHeight
 
-              Rectangle {
-                visible: false
-                width: Style.space(4)
-                height: parent.height - Style.space(18)
-                radius: Math.min(root.cornerRadius, Style.space(4))
-                color: root.selectedBackground
-                anchors.left: parent.left
-                anchors.leftMargin: root.rowReservedBorderLeft + Style.space(8)
-                anchors.verticalCenter: parent.verticalCenter
-              }
-
+              // KRunner category column: the group caption, on the first row
+              // of each section only.
               Text {
-                id: iconText
+                id: categoryText
                 textFormat: Text.PlainText
-                visible: row.hasIcon && !row.usesImage
-                text: row.icon
-                color: row.hasCursor ? root.selectedText : root.foreground
-                font.family: row.iconFont.length > 0 ? row.iconFont : root.fontFamily
-                font.pixelSize: Style.font.iconLarge
-                width: Style.space(36)
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
+                visible: root.showCategories && row.ListView.previousSection !== row.ListView.section
+                text: root.sectionLabels[row.section] || ""
+                width: Math.max(0, root.categoryWidth - Style.space(12))
                 anchors.left: parent.left
-                anchors.leftMargin: root.rowReservedBorderLeft + Style.space(8)
-                y: contentColumn.y + labelText.y + (labelText.height - height) / 2
-              }
-
-              Image {
-                id: appIconImage
-                visible: row.usesImage
-                width: Style.font.iconLarge
-                height: Style.font.iconLarge
-                fillMode: Image.PreserveAspectFit
-                // Decode at physical pixels — a logical-size decode leaves
-                // PNG icons upscaled and blurry on HiDPI displays.
-                sourceSize.width: width * Screen.devicePixelRatio
-                sourceSize.height: height * Screen.devicePixelRatio
-                source: row.isApp ? appSource.iconSource(row.appIcon)
-                      : row.kind === "source" ? (row.appIcon ? row.appIcon : Quickshell.iconPath(row.icon, true)) : ""
-                asynchronous: true
-                anchors.left: parent.left
-                anchors.leftMargin: root.rowReservedBorderLeft + Style.space(8) + (Style.space(36) - width) / 2
-                y: contentColumn.y + labelText.y + (labelText.height - height) / 2
-              }
-
-              Column {
-                id: contentColumn
-                anchors.left: row.hasIcon ? iconText.right : parent.left
-                anchors.leftMargin: row.hasIcon ? Style.space(6) : root.rowReservedBorderLeft + Style.space(18)
-                anchors.right: trail.left
-                anchors.rightMargin: Style.space(6)
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: Style.space(3)
-
-                Text {
-                  id: labelText
-                  textFormat: Text.PlainText
-                  width: parent.width
-                  text: row.label
-                  color: row.hasCursor ? root.selectedText : root.foreground
-                  font.family: root.fontFamily
-                  font.pixelSize: Style.font.heading
-                  font.weight: Font.Medium
-                  elide: Text.ElideRight
-                }
-
-                Text {
-                  textFormat: Text.PlainText
-                  width: parent.width
-                  text: row.detail
-                  visible: root.filterText && row.detail.length > 0
-                  color: root.foreground
-                  opacity: 0.52
-                  font.family: root.fontFamily
-                  font.pixelSize: Style.font.bodySmall
-                  elide: Text.ElideRight
-                }
+                horizontalAlignment: Text.AlignRight
+                color: root.foreground
+                opacity: 0.6
+                font.family: root.textFamily
+                font.pixelSize: root.fontBodySmall
+                elide: Text.ElideLeft
               }
 
-              Row {
-                id: trail
-                width: Style.space(14)
+              BorderSurface {
+                id: rowSurface
+                anchors.left: parent.left
+                anchors.leftMargin: root.categoryWidth
                 anchors.right: parent.right
-                anchors.rightMargin: root.rowReservedBorderRight + Style.space(8)
-                y: contentColumn.y + labelText.y + (labelText.height - height) / 2
-                spacing: 0
+                height: parent.height
+                radius: root.cornerRadius
+                color: row.hasCursor ? root.selectedBackground : "transparent"
+                borderSpec: row.hasCursor ? root.selectedBorderSpec : Border.none()
 
                 Text {
+                  id: iconText
                   textFormat: Text.PlainText
-                  visible: false
-                  text: row.childCount
-                  color: root.foreground
-                  opacity: 0.45
-                  font.family: root.fontFamily
-                  font.pixelSize: Style.font.body
+                  visible: row.hasIcon && !row.usesImage
+                  text: row.icon
+                  color: row.textColor
+                  font.family: row.iconFont.length > 0 ? row.iconFont : root.fontFamily
+                  font.pixelSize: row.iconSize
+                  width: Style.space(28)
+                  horizontalAlignment: Text.AlignHCenter
+                  verticalAlignment: Text.AlignVCenter
+                  anchors.left: parent.left
+                  anchors.leftMargin: root.rowReservedBorderLeft + Style.space(6)
                   anchors.verticalCenter: parent.verticalCenter
                 }
 
-                Text {
-                  textFormat: Text.PlainText
-                  text: row.kind === "menu" || row.kind === "link" ? "›" : ""
-                  color: row.hasCursor ? root.selectedText : root.foreground
-                  opacity: row.kind === "menu" || row.kind === "link" ? 0.36 : 0
-                  font.family: root.fontFamily
-                  font.pixelSize: Style.font.heading
-                  font.weight: Font.Normal
+                Image {
+                  id: appIconImage
+                  visible: row.usesImage
+                  width: row.iconSize
+                  height: row.iconSize
+                  fillMode: Image.PreserveAspectFit
+                  // Decode at physical pixels — a logical-size decode leaves
+                  // PNG icons upscaled and blurry on HiDPI displays.
+                  sourceSize.width: width * Screen.devicePixelRatio
+                  sourceSize.height: height * Screen.devicePixelRatio
+                  source: row.isApp ? appSource.iconSource(row.appIcon)
+                        : row.kind === "source" ? (row.appIcon ? row.appIcon : Quickshell.iconPath(row.icon, true)) : ""
+                  asynchronous: true
+                  anchors.left: parent.left
+                  anchors.leftMargin: root.rowReservedBorderLeft + Style.space(6) + (Style.space(28) - width) / 2
                   anchors.verticalCenter: parent.verticalCenter
+                }
+
+                // Label, then the dimmed detail on the same line; the detail
+                // elides first.
+                Item {
+                  id: contentLine
+                  anchors.left: row.hasIcon ? iconText.right : parent.left
+                  anchors.leftMargin: row.hasIcon ? Style.space(8) : root.rowReservedBorderLeft + Style.space(14)
+                  anchors.right: trail.left
+                  anchors.rightMargin: Style.space(8)
+                  anchors.verticalCenter: parent.verticalCenter
+                  height: labelText.implicitHeight
+
+                  Text {
+                    id: labelText
+                    textFormat: Text.PlainText
+                    width: Math.min(implicitWidth, parent.width)
+                    text: row.label
+                    color: row.textColor
+                    font.family: root.textFamily
+                    font.pixelSize: root.fontBody
+                    font.weight: Font.Medium
+                    elide: Text.ElideRight
+                  }
+
+                  Text {
+                    textFormat: Text.PlainText
+                    anchors.left: labelText.right
+                    anchors.leftMargin: Style.space(10)
+                    anchors.right: parent.right
+                    anchors.baseline: labelText.baseline
+                    text: row.detail
+                    visible: root.filterText && row.detail.length > 0 && width > Style.space(24)
+                    color: row.textColor
+                    opacity: 0.52
+                    font.family: root.textFamily
+                    font.pixelSize: root.fontBodySmall
+                    elide: Text.ElideMiddle
+                  }
+                }
+
+                // COSMIC-style Ctrl+N hint, then the submenu chevron.
+                Row {
+                  id: trail
+                  anchors.right: parent.right
+                  anchors.rightMargin: root.rowReservedBorderRight + Style.space(10)
+                  anchors.verticalCenter: parent.verticalCenter
+                  spacing: Style.space(8)
+
+                  Text {
+                    textFormat: Text.PlainText
+                    text: root.settings.hints && row.index < 9 ? "Ctrl+" + (row.index + 1) : ""
+                    visible: text.length > 0
+                    color: row.textColor
+                    opacity: 0.45
+                    font.family: root.textFamily
+                    font.pixelSize: root.fontCaption
+                    anchors.verticalCenter: parent.verticalCenter
+                  }
+
+                  Text {
+                    textFormat: Text.PlainText
+                    text: "›"
+                    visible: row.kind === "menu" || row.kind === "link"
+                    color: row.textColor
+                    opacity: 0.36
+                    font.family: root.textFamily
+                    font.pixelSize: root.fontHeading
+                    anchors.verticalCenter: parent.verticalCenter
+                  }
                 }
               }
 
               MouseArea {
                 id: mouseArea
-                anchors.fill: parent
+                anchors.fill: rowSurface
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onEntered: root.selectFromPointer(row.index, row, {
+                onEntered: root.selectFromPointer(row.index, rowSurface, {
                   x: mouseArea.mouseX,
                   y: mouseArea.mouseY
                 })
                 onPositionChanged: function(mouse) {
-                  root.selectFromPointer(row.index, row, mouse)
+                  root.selectFromPointer(row.index, rowSurface, mouse)
                 }
                 onClicked: {
                   root.cursorActive = true
@@ -1291,7 +1519,7 @@ Item {
               color: root.selectedText
               opacity: 0.8
               font.family: root.fontFamily
-              font.pixelSize: Style.font.displayLarge
+              font.pixelSize: root.fontDisplayLarge
               horizontalAlignment: Text.AlignHCenter
               width: Style.space(320)
             }
@@ -1301,8 +1529,8 @@ Item {
               text: root.filterText ? "No matches for “" + root.filterText + "”" : "Nothing here yet"
               color: root.foreground
               opacity: 0.7
-              font.family: root.fontFamily
-              font.pixelSize: Style.font.title
+              font.family: root.textFamily
+              font.pixelSize: root.fontTitle
               horizontalAlignment: Text.AlignHCenter
               width: Style.space(320)
             }

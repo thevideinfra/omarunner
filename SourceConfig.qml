@@ -20,8 +20,11 @@ Item {
 
   function isEnabled(sourceId) { return SourceModel.isEnabled(root.config, sourceId) }
 
-  function toggle(sourceId) {
-    root.config = SourceModel.toggled(root.config, sourceId)
+  function toggle(sourceId) { root.apply(SourceModel.toggled(root.config, sourceId)) }
+
+  // Replaces the whole config (Sources toggles, Settings choices) and writes it.
+  function apply(nextConfig) {
+    root.config = nextConfig
     if (!root.malformed) { root.write(); return }
     if (!backup.running) {
       backup.command = ["cp", "-f", "--", root.path, root.path + ".bak"]
