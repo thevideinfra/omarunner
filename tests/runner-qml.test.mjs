@@ -263,7 +263,7 @@ test("every source has a hint for the Sources page, shown without a query", asyn
   assert.ok(qml.includes('(root.filterText || row.kind === "source-toggle") && row.detail.length > 0'))
 })
 
-test("details and Ctrl+N hints use the Hint size setting", () => {
+test("category captions, details and Ctrl+N hints use the Hint size setting", () => {
   assert.ok(qml.includes("root.fontBody * root.settings.hintScale / 100"))
-  assert.equal((qml.match(/font\.pixelSize: root\.fontHint/g) || []).length, 2)
+  assert.equal((qml.match(/font\.pixelSize: root\.fontHint/g) || []).length, 3)
 })

@@ -56,8 +56,8 @@ Item {
   readonly property int fontTitle: scaledFont(Style.font.title)
   readonly property int fontHeading: scaledFont(Style.font.heading)
   readonly property int fontDisplayLarge: scaledFont(Style.font.displayLarge)
-  // Row details, Sources hints and Ctrl+N hints: Settings → Hint size, as a
-  // share of the row label size.
+  // Category captions, row details, Sources hints and Ctrl+N hints:
+  // Settings → Hint size, as a share of the row label size.
   readonly property int fontHint: Math.max(1, Math.round(root.fontBody * root.settings.hintScale / 100))
   // JSONC menu definitions. The shell parses both at startup and merges
   // the user file on top of the defaults, so the keybind → IPC → visible
@@ -1348,7 +1348,7 @@ Item {
                 color: root.foreground
                 opacity: 0.6
                 font.family: root.textFamily
-                font.pixelSize: root.fontBodySmall
+                font.pixelSize: root.fontHint
                 elide: Text.ElideLeft
               }
 
