@@ -1,6 +1,6 @@
 // Clipboard source: "cb" lists Omarchy's clipboard history, newest first.
-// "cb git" filters text entries, "cb screenshot" (or image, img, picture)
-// lists copied images, and "cb list" opens the full clipboard manager. Only
+// "cb git" filters text entries, "cb screenshot" (or image, img, picture,
+// or just "cb scr") lists copied images, and "cb list" opens the full clipboard manager. Only
 // the prefix shows history, so copied secrets never surface in a normal search.
 function claims(query) { return /^cb(\s|$)/i.test(String(query || "").trim()) }
 
@@ -19,31 +19,43 @@ function IMAGE_WORDS() { return ["screenshot", "screenshots", "image", "images",
 function isText(entry) { return !!entry && entry.type === "text" && typeof entry.text === "string" }
 function isImage(entry) { return !!entry && entry.type === "image" && typeof entry.path === "string" }
 
-// An empty filter lists every entry; an image word lists images; anything
-// else matches text entries containing every term. Indices are the entries'
-// positions in the history file.
+// How a single term relates to the image words: "exact" (screenshot, img),
+// "prefix" (2+ letters starting one: sc, scr, im, pic), or "".
+function imageWordMatch(term) {
+  var words = IMAGE_WORDS()
+  if (words.indexOf(term) >= 0) return "exact"
+  if (term.length < 2) return ""
+  for (var i = 0; i < words.length; i++) if (words[i].indexOf(term) === 0) return "prefix"
+  return ""
+}
+
+// An empty filter lists every entry. An image word lists images only; the
+// start of one lists images first, then text containing it, so "cb scr" shows
+// screenshots and still finds a copied "script.sh". Anything else matches
+// text entries containing every term. Indices are positions in the file.
 function matches(history, filterText) {
   var terms = String(filterText || "").toLowerCase().split(/\s+/).filter(function(t) { return t.length > 0 })
   var list = Array.isArray(history) ? history : []
-  var images = terms.length === 1 && IMAGE_WORDS().indexOf(terms[0]) >= 0
-  var out = []
+  var imageMode = terms.length === 1 ? imageWordMatch(terms[0]) : ""
+  var images = []
+  var texts = []
   for (var i = 0; i < list.length; i++) {
     var entry = list[i]
     if (terms.length === 0) {
-      if (isText(entry) || isImage(entry)) out.push({ entry: entry, index: i })
+      if (isText(entry) || isImage(entry)) texts.push({ entry: entry, index: i })
       continue
     }
-    if (images) {
-      if (isImage(entry)) out.push({ entry: entry, index: i })
+    if (isImage(entry)) {
+      if (imageMode) images.push({ entry: entry, index: i })
       continue
     }
-    if (!isText(entry)) continue
+    if (!isText(entry) || imageMode === "exact") continue
     var text = entry.text.toLowerCase()
     var ok = true
     for (var t = 0; t < terms.length; t++) if (text.indexOf(terms[t]) < 0) { ok = false; break }
-    if (ok) out.push({ entry: entry, index: i })
+    if (ok) texts.push({ entry: entry, index: i })
   }
-  return out
+  return images.concat(texts)
 }
 
 function label(text) {

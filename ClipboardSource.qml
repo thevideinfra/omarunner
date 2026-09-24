@@ -11,7 +11,7 @@ Item {
   id: root
   property string sourceId: "clipboard"
   property string groupLabel: "Clipboard"
-  property string hint: "cb · cb git · cb screenshot · cb list"
+  property string hint: "cb · cb git · cb scr (images) · cb list"
   property int maxRows: 8
   property bool enabled: true
   property var history: []
