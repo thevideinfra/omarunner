@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# Compare the installed Omarchy menu plugin against the vendored baseline in
+# upstream/, so drift is visible after an Omarchy update.
+set -uo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+MENU_DIR="/usr/share/omarchy/shell/plugins/menu"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --menu-dir)
+      [[ $# -ge 2 ]] || { echo "omarunner-diff-upstream: --menu-dir requires a value" >&2; exit 2; }
+      MENU_DIR="$2"
+      shift 2
+      ;;
+    -h | --help)
+      echo "Usage: omarunner-diff-upstream [--menu-dir DIR]"
+      exit 0
+      ;;
+    *)
+      echo "omarunner-diff-upstream: unknown argument '$1'" >&2
+      exit 2
+      ;;
+  esac
+done
+
+status=0
+for file in Menu.qml MenuModel.js; do
+  baseline="$REPO_DIR/upstream/$file"
+  current="$MENU_DIR/$file"
+  if [[ ! -f $current ]]; then
+    echo "missing: $current"
+    exit 2
+  fi
+  if [[ ! -f $baseline ]]; then
+    echo "missing: $baseline"
+    exit 2
+  fi
+  if ! diff -u "$baseline" "$current"; then
+    echo "drift: $file"
+    status=1
+  fi
+done
+
+exit "$status"
