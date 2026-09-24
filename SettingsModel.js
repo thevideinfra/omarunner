@@ -11,6 +11,8 @@ function CHOICES() {
       { value: 24, label: "Compact" }, { value: 28, label: "Normal" }, { value: 34, label: "Comfortable" }] },
     { key: "fontScale", label: "Text size", choices: [
       { value: 75, label: "75%" }, { value: 85, label: "85%" }, { value: 100, label: "100%" }, { value: 115, label: "115%" }] },
+    { key: "hintScale", label: "Hint size", choices: [
+      { value: 85, label: "Small" }, { value: 100, label: "Normal" }, { value: 115, label: "Large" }] },
     { key: "fontFamily", label: "Font", choices: [
       { value: "", label: "Omarchy default" }, { value: "sans-serif", label: "Sans" }, { value: "serif", label: "Serif" }] },
     { key: "border", label: "Border", choices: [
@@ -27,7 +29,7 @@ function TOGGLES() {
 }
 
 function defaults() {
-  return { width: 510, rows: 9, density: 28, fontScale: 85, fontFamily: "", border: 2, fuzzy: true, categories: true, hints: true }
+  return { width: 510, rows: 9, density: 28, fontScale: 85, hintScale: 100, fontFamily: "", border: 2, fuzzy: true, categories: true, hints: true }
 }
 
 function choiceFor(key) {
@@ -84,31 +86,42 @@ function menuRow(id, parent, label, order) {
 
 // The Settings page tree: one submenu per choice (label shows the current
 // value), one toggle row per switch. `checked` maps row id -> ✓.
+// Page entries are alphabetical by name; a submenu's choices keep their
+// preset order (Narrow, Normal, Wide...).
 function pageRows(settingsIn) {
   var settings = settingsIn || defaults()
-  var rows = []
+  var entries = []
   var checked = ({})
   var list = CHOICES()
   for (var i = 0; i < list.length; i++) {
     var key = list[i].key
     var menuId = "settings." + key
-    rows.push(menuRow(menuId, "settings", list[i].label + " · " + currentLabel(key, settings[key]), rows.length))
+    var group = [menuRow(menuId, "settings", list[i].label + " · " + currentLabel(key, settings[key]), 0)]
     for (var c = 0; c < list[i].choices.length; c++) {
       var choice = list[i].choices[c]
       var id = menuId + "." + c
-      rows.push({ id: id, parent: menuId, kind: "setting-option", icon: "", iconFont: "", label: choice.label, title: "",
+      group.push({ id: id, parent: menuId, kind: "setting-option", icon: "", iconFont: "", label: choice.label, title: "",
         target: "", description: "", action: "", provider: "", aliases: [], when: "", checked: "config",
-        value: key + "=" + choice.value, order: rows.length })
+        value: key + "=" + choice.value, order: 0 })
       checked[id] = settings[key] === choice.value
     }
+    entries.push({ name: list[i].label, rows: group })
   }
   var toggles = TOGGLES()
   for (var t = 0; t < toggles.length; t++) {
     var toggleId = "settings." + toggles[t].key
-    rows.push({ id: toggleId, parent: "settings", kind: "setting-toggle", icon: "", iconFont: "", label: toggles[t].label,
-      title: "", target: "", description: "", action: "", provider: "", aliases: [], when: "", checked: "config",
-      value: toggles[t].key, order: rows.length })
+    entries.push({ name: toggles[t].label, rows: [{ id: toggleId, parent: "settings", kind: "setting-toggle", icon: "",
+      iconFont: "", label: toggles[t].label, title: "", target: "", description: "", action: "", provider: "",
+      aliases: [], when: "", checked: "config", value: toggles[t].key, order: 0 }] })
     checked[toggleId] = settings[toggles[t].key] === true
+  }
+  entries.sort(function(a, b) { return a.name.localeCompare(b.name) })
+  var rows = []
+  for (var e = 0; e < entries.length; e++) {
+    for (var r = 0; r < entries[e].rows.length; r++) {
+      entries[e].rows[r].order = rows.length
+      rows.push(entries[e].rows[r])
+    }
   }
   return { rows: rows, checked: checked }
 }

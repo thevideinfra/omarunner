@@ -193,3 +193,12 @@ test("recent fuzzy hits follow substring hits, only when enabled", () => {
     ["/home/ks/Docs/report.odt", "/home/ks/Docs/old report.pdf"])
   assert.deepEqual(R.matches(entries, "q3", true), ["/home/ks/reports/q3.xlsx"])
 })
+
+test("clipboard rows only exist behind the cb prefix", () => {
+  const history = Cb.parseHistory(HISTORY)
+  for (const q of ["etc", "git", "documents", "c", "cbx"]) assert.deepEqual(Cb.rowsFor(history, q, 8), [], q)
+  assert.equal(Cb.rowsFor(history, "cb", 8).length, 4)
+  assert.equal(Cb.rowsFor(history, "cb", 2).length, 2)
+  assert.deepEqual(Cb.rowsFor(history, "cb git", 8).map(r => r.label), ["git push origin master", "git status"])
+  assert.deepEqual(Cb.rowsFor(history, "cb list", 8).map(r => r.value), ["list:"])
+})

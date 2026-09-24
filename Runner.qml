@@ -56,6 +56,9 @@ Item {
   readonly property int fontTitle: scaledFont(Style.font.title)
   readonly property int fontHeading: scaledFont(Style.font.heading)
   readonly property int fontDisplayLarge: scaledFont(Style.font.displayLarge)
+  // Row details, Sources hints and Ctrl+N hints: Settings → Hint size, as a
+  // share of the row label size.
+  readonly property int fontHint: Math.max(1, Math.round(root.fontBody * root.settings.hintScale / 100))
   // JSONC menu definitions. The shell parses both at startup and merges
   // the user file on top of the defaults, so the keybind → IPC → visible
   // path doesn't have to shell out to bash + jq on every open.
@@ -118,7 +121,7 @@ Item {
   property int categoryWidth: root.showCategories ? Style.space(120) : 0
   property bool searchDivider: false
   property int layoutSerial: 0
-  property var sources: [calcSource, locationSource, commandSource, killSource, clipboardSource, fileSource, recentSource]
+  property var sources: [calcSource, locationSource, commandSource, killSource, clipboardSource, folderSource, fileSource, recentSource]
   property var sourceRows: ({})
   property int searchSerial: 0
   property var sectionLabels: ({})
@@ -563,8 +566,13 @@ Item {
     for (var i = 0; i < root.sources.length; i++) {
       var s = root.sources[i]
       if (!s.enabled) continue
-      groups.push({ sourceId: s.sourceId, groupLabel: s.groupLabel, maxRows: s.maxRows, rows: root.sourceRows[s.sourceId] || [],
-        leading: s.leading === true, exclusive: root.sourceClaims(s, root.filterText.trim()) })
+      // A prefix source ("cb", "kill", ">") shows rows only while its prefix
+      // is typed, even if an older reply is still stored.
+      var claimsNow = root.sourceClaims(s, root.filterText.trim())
+      var prefixOnly = typeof s.claims === "function"
+      groups.push({ sourceId: s.sourceId, groupLabel: s.groupLabel, maxRows: s.maxRows,
+        rows: prefixOnly && !claimsNow ? [] : (root.sourceRows[s.sourceId] || []),
+        leading: s.leading === true, exclusive: claimsNow })
     }
     return groups
   }
@@ -592,10 +600,11 @@ Item {
     order.push("sources")
     // Applications and Omarchy are built into buildRows, not registered
     // sources, but they toggle through the same config keys.
-    var sourceList = [{ sourceId: "apps", groupLabel: "Applications" }, { sourceId: "menu", groupLabel: "Omarchy" },
-                      { sourceId: "session", groupLabel: "Session" }]
+    var sourceList = [{ sourceId: "apps", groupLabel: "Applications", hint: "Installed apps" },
+                      { sourceId: "menu", groupLabel: "Omarchy", hint: "Omarchy menu entries" },
+                      { sourceId: "session", groupLabel: "Session", hint: "lock · sleep · restart · power off" }]
     for (var s = 0; s < root.sources.length; s++)
-      sourceList.push({ sourceId: root.sources[s].sourceId, groupLabel: root.sources[s].groupLabel })
+      sourceList.push({ sourceId: root.sources[s].sourceId, groupLabel: root.sources[s].groupLabel, hint: root.sources[s].hint || "" })
     var rows = SourceModel.sourcePageRows(sourceConfig.config, sourceList)
     var checked = ({})
     for (var k in root.checkedResults) checked[k] = root.checkedResults[k]
@@ -804,6 +813,12 @@ Item {
   ClipboardSource {
     id: clipboardSource
     onResults: function(serial, rows) { root.acceptSourceRows(clipboardSource.sourceId, serial, rows) }
+  }
+
+  FolderSource {
+    id: folderSource
+    fuzzy: root.settings.fuzzy
+    onResults: function(serial, rows) { root.acceptSourceRows(folderSource.sourceId, serial, rows) }
   }
 
   RecentSource {
@@ -1411,11 +1426,13 @@ Item {
                     anchors.right: parent.right
                     anchors.baseline: labelText.baseline
                     text: row.detail
-                    visible: root.filterText && row.detail.length > 0 && width > Style.space(24)
+                    // Search results show their detail; the Sources page always
+                    // shows each source's hint.
+                    visible: (root.filterText || row.kind === "source-toggle") && row.detail.length > 0 && width > Style.space(24)
                     color: row.textColor
                     opacity: 0.52
                     font.family: root.textFamily
-                    font.pixelSize: root.fontBodySmall
+                    font.pixelSize: root.fontHint
                     elide: Text.ElideMiddle
                   }
                 }
@@ -1435,7 +1452,7 @@ Item {
                     color: row.textColor
                     opacity: 0.45
                     font.family: root.textFamily
-                    font.pixelSize: root.fontCaption
+                    font.pixelSize: root.fontHint
                     anchors.verticalCenter: parent.verticalCenter
                   }
 

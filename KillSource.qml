@@ -9,6 +9,7 @@ Item {
   id: root
   property string sourceId: "kill"
   property string groupLabel: "Kill"
+  property string hint: "kill name · stop a process"
   property int maxRows: 8
   property bool enabled: true
   signal results(int serial, var rows)

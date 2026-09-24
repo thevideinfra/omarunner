@@ -4,7 +4,7 @@ import { loadJsModule } from "./helpers/load-js-module.mjs"
 const S = await loadJsModule("SettingsModel.js")
 
 test("defaults match the tuned launcher", () => {
-  assert.deepEqual(S.resolve({}), { width: 510, rows: 9, density: 28, fontScale: 85, fontFamily: "", border: 2,
+  assert.deepEqual(S.resolve({}), { width: 510, rows: 9, density: 28, fontScale: 85, hintScale: 100, fontFamily: "", border: 2,
     fuzzy: true, categories: true, hints: true })
 })
 
@@ -45,4 +45,19 @@ test("the page shows current values and ticks the chosen option", () => {
   const fuzzy = page.rows.find(r => r.id === "settings.fuzzy")
   assert.equal(fuzzy.kind, "setting-toggle")
   assert.equal(page.checked["settings.fuzzy"], true)
+})
+
+test("the Settings page lists its entries alphabetically, choices in preset order", () => {
+  const page = S.pageRows(S.defaults())
+  const top = page.rows.filter(r => r.parent === "settings").map(r => r.label.split(" · ")[0])
+  assert.deepEqual(top, [...top].sort((a, b) => a.localeCompare(b)))
+  assert.equal(top[0], "Border")
+  const widths = page.rows.filter(r => r.parent === "settings.width").map(r => r.label)
+  assert.deepEqual(widths, ["Narrow", "Normal", "Wide", "Extra wide"])
+  assert.deepEqual(page.rows.map(r => r.order), page.rows.map((_, i) => i))
+})
+
+test("hint size resolves from its presets", () => {
+  assert.equal(S.resolve({ settings: { hintScale: 115 } }).hintScale, 115)
+  assert.equal(S.resolve({ settings: { hintScale: 300 } }).hintScale, 100)
 })

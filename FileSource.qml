@@ -9,6 +9,7 @@ Item {
   id: root
   property string sourceId: "files"
   property string groupLabel: "Files"
+  property string hint: "Files in your home folder by name"
   property int maxRows: 5
   property bool enabled: true
   property string home: Quickshell.env("HOME")

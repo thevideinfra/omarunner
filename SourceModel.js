@@ -42,15 +42,19 @@ function isEnabled(config, sourceId) {
 
 function serialize(config) { return JSON.stringify(config, null, 2) + "\n" }
 
-// sourceList: [{ sourceId, groupLabel }], built from Runner.qml's root.sources.
+// sourceList: [{ sourceId, groupLabel, hint }], built from Runner.qml's root.sources;
+// the hint shows beside the name.
 function sourcePageRows(config, sourceList) {
-  var list = Array.isArray(sourceList) ? sourceList : []
+  // Alphabetical by the label shown on the page.
+  var list = (Array.isArray(sourceList) ? sourceList : []).slice().sort(function(a, b) {
+    return String(a.groupLabel || a.sourceId || "").localeCompare(String(b.groupLabel || b.sourceId || ""))
+  })
   var rows = []
   for (var i = 0; i < list.length; i++) {
     var id = String(list[i].sourceId || "")
     if (!id) continue
     rows.push({ id: "sources." + id, parent: "sources", kind: "source-toggle", icon: "", iconFont: "",
-      label: String(list[i].groupLabel || id), title: "", target: "", description: "", action: "", provider: "",
+      label: String(list[i].groupLabel || id), title: "", target: "", description: String(list[i].hint || ""), action: "", provider: "",
       aliases: [], when: "", checked: "config", value: id, order: rows.length })
   }
   return rows

@@ -8,6 +8,7 @@ Item {
   id: root
   property string sourceId: "command"
   property string groupLabel: "Command"
+  property string hint: "> cmd · runs in a terminal, Shift: background"
   property int maxRows: 1
   property bool enabled: true
   signal results(int serial, var rows)
