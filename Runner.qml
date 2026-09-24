@@ -58,6 +58,8 @@ Item {
   readonly property int fontDisplayLarge: scaledFont(Style.font.displayLarge)
   // Category captions, row details, Sources hints and Ctrl+N hints:
   // Settings → Hint size, as a share of the row label size.
+  // Name column on the Sources page, wide enough for "Applications ✓".
+  readonly property int sourceNameWidth: Math.round(root.fontBody * 9)
   readonly property int fontHint: Math.max(1, Math.round(root.fontBody * root.settings.hintScale / 100))
   // JSONC menu definitions. The shell parses both at startup and merges
   // the user file on top of the defaults, so the keybind → IPC → visible
@@ -1425,7 +1427,9 @@ Item {
                   Text {
                     id: labelText
                     textFormat: Text.PlainText
-                    width: Math.min(implicitWidth, parent.width)
+                    // Sources page: names take a fixed column so the hints
+                    // line up beside them, split by a hairline.
+                    width: row.kind === "source-toggle" ? Math.min(root.sourceNameWidth, parent.width) : Math.min(implicitWidth, parent.width)
                     text: row.label
                     color: row.textColor
                     font.family: root.textFamily
@@ -1434,10 +1438,21 @@ Item {
                     elide: Text.ElideRight
                   }
 
+                  Rectangle {
+                    id: hintRule
+                    visible: row.kind === "source-toggle" && row.detail.length > 0
+                    width: Style.spacing.hairline
+                    height: labelText.height
+                    anchors.left: labelText.right
+                    anchors.leftMargin: Style.space(8)
+                    anchors.verticalCenter: labelText.verticalCenter
+                    color: Util.alpha(row.textColor, 0.25)
+                  }
+
                   Text {
                     textFormat: Text.PlainText
-                    anchors.left: labelText.right
-                    anchors.leftMargin: Style.space(10)
+                    anchors.left: hintRule.visible ? hintRule.right : labelText.right
+                    anchors.leftMargin: hintRule.visible ? Style.space(8) : Style.space(10)
                     anchors.right: parent.right
                     anchors.baseline: labelText.baseline
                     text: row.detail

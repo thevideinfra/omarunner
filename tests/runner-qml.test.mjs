@@ -278,3 +278,8 @@ test("typing on a setting's page offers the typed value", () => {
   assert.ok(qml.includes("SettingsModel.customDisplayRow(root.activeMenu, root.filterText)"))
   assert.ok(qml.includes('row.kind === "setting-custom"'))
 })
+
+test("Sources page hints line up in a column after a hairline", () => {
+  assert.ok(qml.includes('width: row.kind === "source-toggle" ? Math.min(root.sourceNameWidth, parent.width)'))
+  assert.match(qml, /id: hintRule[\s\S]*?visible: row\.kind === "source-toggle" && row\.detail\.length > 0/)
+})
