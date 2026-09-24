@@ -80,3 +80,17 @@ test("sourcePageRows falls back to the source id as a label when none is given",
   const rows = M.sourcePageRows(M.defaultConfig(), [{ sourceId: "files" }])
   assert.equal(rows[0].label, "files")
 })
+
+test("the Sources page lists sources alphabetically", () => {
+  const rows = M.sourcePageRows({}, [
+    { sourceId: "files", groupLabel: "Files" }, { sourceId: "apps", groupLabel: "Applications" },
+    { sourceId: "calc", groupLabel: "Calculator" }, { sourceId: "clipboard", groupLabel: "Clipboard" }])
+  assert.deepEqual(rows.map(r => r.label), ["Applications", "Calculator", "Clipboard", "Files"])
+  assert.deepEqual(rows.map(r => r.order), [0, 1, 2, 3])
+})
+
+test("each Sources page row carries its source's hint as description", () => {
+  const rows = M.sourcePageRows({}, [{ sourceId: "clipboard", groupLabel: "Clipboard", hint: "cb · cb list" }, { sourceId: "x", groupLabel: "X" }])
+  assert.equal(rows[0].description, "cb · cb list")
+  assert.equal(rows[1].description, "")
+})

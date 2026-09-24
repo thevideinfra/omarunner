@@ -9,6 +9,7 @@ Item {
   id: root
   property string sourceId: "calc"
   property string groupLabel: "Calculator"
+  property string hint: "2+2 · 10 km to mi · 5 usd in eur"
   property int maxRows: 1
   property bool enabled: true
   property bool leading: true

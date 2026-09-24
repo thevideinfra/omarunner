@@ -10,6 +10,7 @@ Item {
   id: root
   property string sourceId: "locations"
   property string groupLabel: "Open"
+  property string hint: "URLs and paths: github.com, ~/Downloads"
   property int maxRows: 1
   property bool enabled: true
   property bool leading: true

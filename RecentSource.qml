@@ -10,6 +10,7 @@ Item {
   id: root
   property string sourceId: "recent"
   property string groupLabel: "Recent"
+  property string hint: "Recently opened files"
   property int maxRows: 5
   property bool enabled: true
   property string home: Quickshell.env("HOME")

@@ -11,6 +11,7 @@ Item {
   id: root
   property string sourceId: "clipboard"
   property string groupLabel: "Clipboard"
+  property string hint: "cb · cb git · cb screenshot · cb list"
   property int maxRows: 8
   property bool enabled: true
   property var history: []
@@ -18,11 +19,8 @@ Item {
 
   function claims(query) { return ClipboardModel.claims(query) }
 
-  // "cb list" offers the clipboard manager; everything else lists history.
   function search(query, serial) {
-    if (ClipboardModel.isListCommand(query)) { root.results(serial, [ClipboardModel.listRow()]); return }
-    var hits = ClipboardModel.matches(root.history, ClipboardModel.filter(query))
-    root.results(serial, hits.slice(0, root.maxRows).map(ClipboardModel.row))
+    root.results(serial, ClipboardModel.rowsFor(root.history, query, root.maxRows))
   }
 
   function activate(value, modifiers) {

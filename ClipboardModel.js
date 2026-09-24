@@ -80,6 +80,14 @@ function listRow() {
   return baseRow("list", "edit-paste", "Open clipboard manager", "All clipboard history", "list:")
 }
 
+// The rows for one query. Nothing without the cb prefix: an unprefixed query
+// has an empty filter, which would otherwise list the whole history.
+function rowsFor(history, query, maxRows) {
+  if (!claims(query)) return []
+  if (isListCommand(query)) return [listRow()]
+  return matches(history, filter(query)).slice(0, maxRows).map(row)
+}
+
 function resolveIndex(history, text) {
   var list = Array.isArray(history) ? history : []
   for (var i = 0; i < list.length; i++) if (isText(list[i]) && list[i].text === text) return i
@@ -115,5 +123,5 @@ function activateArgv(history, value, copyOnly) {
 
 if (typeof module !== "undefined") {
   module.exports = { claims: claims, filter: filter, isListCommand: isListCommand, parseHistory: parseHistory,
-    matches: matches, label: label, row: row, listRow: listRow, resolveIndex: resolveIndex, activateArgv: activateArgv }
+    matches: matches, label: label, row: row, listRow: listRow, rowsFor: rowsFor, resolveIndex: resolveIndex, activateArgv: activateArgv }
 }

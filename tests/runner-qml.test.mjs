@@ -173,15 +173,15 @@ test("text is scaled locally, never through the shell's font tokens", () => {
 })
 
 test("the Sources page lists Applications and Omarchy ahead of the sources", () => {
-  assert.ok(qml.includes('{ sourceId: "apps", groupLabel: "Applications" }'))
-  assert.ok(qml.includes('{ sourceId: "menu", groupLabel: "Omarchy" }'))
+  assert.ok(qml.includes('{ sourceId: "apps", groupLabel: "Applications", hint: "Installed apps" }'))
+  assert.ok(qml.includes('{ sourceId: "menu", groupLabel: "Omarchy", hint: "Omarchy menu entries" }'))
   assert.match(qml, /root\.sourceGroups\(\), root\.hiddenGroups\(\), root\.settings\.fuzzy\)/)
 })
 
 // -- More sources.
 
 const SOURCE_FILES = ["CalcSource.qml", "LocationSource.qml", "CommandSource.qml", "KillSource.qml",
-  "ClipboardSource.qml", "RecentSource.qml", "FileSource.qml"]
+  "ClipboardSource.qml", "RecentSource.qml", "FileSource.qml", "FolderSource.qml"]
 
 test("every source file implements the source interface", async () => {
   for (const file of SOURCE_FILES) {
@@ -194,7 +194,7 @@ test("every source file implements the source interface", async () => {
 })
 
 test("sources built from user text run argv, never a shell string", async () => {
-  for (const file of ["CalcSource.qml", "CommandSource.qml", "KillSource.qml", "ClipboardSource.qml"]) {
+  for (const file of ["CalcSource.qml", "CommandSource.qml", "KillSource.qml", "ClipboardSource.qml", "FolderSource.qml"]) {
     const src = await readFile(join(root, file), "utf8")
     assert.ok(src.includes("Util.execArgv("), `${file} should use Util.execArgv`)
     assert.equal(src.includes("Util.execDetached("), false, `${file} should not use Util.execDetached`)
@@ -211,14 +211,15 @@ test("prefix sources claim their queries; leading sources lead", async () => {
 })
 
 test("the runner registers every source and gives claimed queries to their source alone", () => {
-  assert.ok(qml.includes("property var sources: [calcSource, locationSource, commandSource, killSource, clipboardSource, fileSource, recentSource]"))
-  for (const type of ["CalcSource", "LocationSource", "CommandSource", "KillSource", "ClipboardSource", "RecentSource"]) {
+  assert.ok(qml.includes("property var sources: [calcSource, locationSource, commandSource, killSource, clipboardSource, folderSource, fileSource, recentSource]"))
+  for (const type of ["CalcSource", "LocationSource", "CommandSource", "KillSource", "ClipboardSource", "RecentSource", "FolderSource"]) {
     assert.match(qml, new RegExp(type + "\\s*\\{"))
   }
   assert.match(qml, /function sourceClaims\(source, query\)/)
-  assert.ok(qml.includes("exclusive: root.sourceClaims(s, root.filterText.trim())"))
+  assert.ok(qml.includes("leading: s.leading === true, exclusive: claimsNow"))
+  assert.ok(qml.includes("rows: prefixOnly && !claimsNow ? [] : (root.sourceRows[s.sourceId] || [])"))
   assert.ok(qml.includes("RunnerModel.withSessionAliases(mergedMenu.items)"))
-  assert.ok(qml.includes('{ sourceId: "session", groupLabel: "Session" }'))
+  assert.ok(qml.includes('{ sourceId: "session", groupLabel: "Session", hint: "lock · sleep · restart · power off" }'))
 })
 
 // -- Settings page and fuzzy matching.
@@ -253,4 +254,16 @@ test("fuzzy reaches the files and recent sources", async () => {
 test("text follows the chosen font while glyphs stay on the menu font", () => {
   assert.ok(qml.includes("readonly property string textFamily: root.settings.fontFamily || root.fontFamily"))
   assert.ok((qml.match(/font\.family: root\.textFamily/g) || []).length >= 6)
+})
+
+test("every source has a hint for the Sources page, shown without a query", async () => {
+  for (const file of SOURCE_FILES) {
+    assert.match(await readFile(join(root, file), "utf8"), /property string hint: "[^"]+"/, file)
+  }
+  assert.ok(qml.includes('(root.filterText || row.kind === "source-toggle") && row.detail.length > 0'))
+})
+
+test("details and Ctrl+N hints use the Hint size setting", () => {
+  assert.ok(qml.includes("root.fontBody * root.settings.hintScale / 100"))
+  assert.equal((qml.match(/font\.pixelSize: root\.fontHint/g) || []).length, 2)
 })
