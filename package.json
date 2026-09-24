@@ -1,0 +1,8 @@
+{
+  "name": "omarunner",
+  "private": true,
+  "description": "Unit tests for the omarunner plugin's pure helpers. Not published; the plugin itself needs no node runtime.",
+  "scripts": {
+    "test": "node --test"
+  }
+}

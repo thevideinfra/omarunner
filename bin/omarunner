@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Thin wrapper around the Omarchy shell plugin IPC surface, mirroring
+# omarchy-menu. Routes are item ids (setup.power) or aliases (power) and are
+# passed to the plugin as a JSON payload.
+set -euo pipefail
+
+PLUGIN_ID="videinfra.omarunner"
+
+verb="${1-toggle}"
+route="${2-root}"
+
+menu_payload() {
+  jq -nc --arg menu "$1" '{ menu: $menu }'
+}
+
+case "$verb" in
+  toggle)
+    exec omarchy-shell shell toggle "$PLUGIN_ID" "$(menu_payload "$route")"
+    ;;
+  summon)
+    exec omarchy-shell shell summon "$PLUGIN_ID" "$(menu_payload "$route")"
+    ;;
+  close)
+    exec omarchy-shell shell hide "$PLUGIN_ID"
+    ;;
+  refresh | ping)
+    exec omarchy-shell shell call "$PLUGIN_ID" "$verb" "{}"
+    ;;
+  -h | --help | help)
+    cat <<USAGE
+Usage: omarunner [verb] [route]
+
+Verbs:
+  toggle [route]   Open omarunner at <route>, or close it if already open. Default verb.
+  summon [route]   Always open omarunner (no close-if-visible toggle).
+  close            Close omarunner if it is visible.
+  refresh          Re-parse the menu JSONC files.
+  ping             Health check.
+
+Route is an item id (e.g. setup.power) or alias (e.g. power). Defaults to
+"root", which opens the bare search line.
+USAGE
+    exit 0
+    ;;
+  *)
+    echo "omarunner: unknown verb '$verb'. Try 'omarunner --help'." >&2
+    exit 2
+    ;;
+esac
