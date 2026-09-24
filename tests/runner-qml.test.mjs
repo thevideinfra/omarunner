@@ -181,7 +181,7 @@ test("the Sources page lists Applications and Omarchy ahead of the sources", () 
 // -- More sources.
 
 const SOURCE_FILES = ["CalcSource.qml", "LocationSource.qml", "CommandSource.qml", "KillSource.qml",
-  "ClipboardSource.qml", "RecentSource.qml", "FileSource.qml", "FolderSource.qml"]
+  "ClipboardSource.qml", "RecentSource.qml", "FileSource.qml", "FolderSource.qml", "WindowSource.qml", "WebSource.qml"]
 
 test("every source file implements the source interface", async () => {
   for (const file of SOURCE_FILES) {
@@ -194,7 +194,8 @@ test("every source file implements the source interface", async () => {
 })
 
 test("sources built from user text run argv, never a shell string", async () => {
-  for (const file of ["CalcSource.qml", "CommandSource.qml", "KillSource.qml", "ClipboardSource.qml", "FolderSource.qml"]) {
+  for (const file of ["CalcSource.qml", "CommandSource.qml", "KillSource.qml", "ClipboardSource.qml", "FolderSource.qml",
+    "WindowSource.qml", "WebSource.qml"]) {
     const src = await readFile(join(root, file), "utf8")
     assert.ok(src.includes("Util.execArgv("), `${file} should use Util.execArgv`)
     assert.equal(src.includes("Util.execDetached("), false, `${file} should not use Util.execDetached`)
@@ -211,8 +212,8 @@ test("prefix sources claim their queries; leading sources lead", async () => {
 })
 
 test("the runner registers every source and gives claimed queries to their source alone", () => {
-  assert.ok(qml.includes("property var sources: [calcSource, locationSource, commandSource, killSource, clipboardSource, folderSource, fileSource, recentSource]"))
-  for (const type of ["CalcSource", "LocationSource", "CommandSource", "KillSource", "ClipboardSource", "RecentSource", "FolderSource"]) {
+  assert.ok(qml.includes("property var sources: [calcSource, locationSource, commandSource, killSource, clipboardSource, windowSource, folderSource, fileSource, recentSource, webSource]"))
+  for (const type of ["CalcSource", "LocationSource", "CommandSource", "KillSource", "ClipboardSource", "RecentSource", "FolderSource", "WindowSource", "WebSource"]) {
     assert.match(qml, new RegExp(type + "\\s*\\{"))
   }
   assert.match(qml, /function sourceClaims\(source, query\)/)
@@ -282,4 +283,22 @@ test("typing on a setting's page offers the typed value", () => {
 test("Sources page hints line up in a column after a hairline", () => {
   assert.ok(qml.includes('width: row.kind === "source-toggle" ? Math.min(root.sourceNameWidth, parent.width)'))
   assert.match(qml, /id: hintRule[\s\S]*?visible: row\.kind === "source-toggle" && row\.detail\.length > 0/)
+})
+
+test("pointer clicks pass their modifiers", () => {
+  assert.ok(qml.includes("root.activateIndex(row.index, true, mouse.modifiers)"))
+})
+
+test("fallback sources reach buildRows and web search uses the configured URL", () => {
+  assert.ok(qml.includes("fallback: s.fallback === true"))
+  assert.match(qml, /WebSource \{\s*id: webSource\s*searchUrl: sourceConfig\.config\.webSearchUrl/)
+})
+
+test("opacity and corner radius come from the settings", () => {
+  assert.ok(qml.includes("Color.menu.background.a * root.settings.opacity / 100"))
+  assert.ok(qml.includes("root.settings.radius >= 0 ? Style.space(root.settings.radius) : Style.cornerRadius"))
+})
+
+test("the prefix-only guard spares fallback sources like Web", () => {
+  assert.ok(qml.includes('var prefixOnly = typeof s.claims === "function" && s.fallback !== true'))
 })

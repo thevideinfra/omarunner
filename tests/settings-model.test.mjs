@@ -5,6 +5,7 @@ const S = await loadJsModule("SettingsModel.js")
 
 test("defaults match the tuned launcher", () => {
   assert.deepEqual(S.resolve({}), { width: 510, rows: 9, density: 28, fontScale: 85, hintScale: 100, fontFamily: "", border: 2,
+    opacity: 100, radius: -1,
     fuzzy: true, categories: true, hints: true })
 })
 
@@ -101,4 +102,17 @@ test("customDisplayRow offers the typed value as an option row", () => {
   assert.equal(S.customDisplayRow("settings.width", "abc"), null)
   assert.equal(S.customDisplayRow("settings", "600"), null)
   assert.equal(S.customDisplayRow("settings.fontFamily", "Iosevka").value, "fontFamily=Iosevka")
+})
+
+test("opacity and corner radius have presets, a theme default and custom ranges", () => {
+  const d = S.resolve({})
+  assert.equal(d.opacity, 100)
+  assert.equal(d.radius, -1)
+  assert.equal(S.currentLabel("radius", -1), "Theme")
+  assert.equal(S.resolve({ settings: { opacity: 80, radius: 12 } }).opacity, 80)
+  assert.equal(S.resolve({ settings: { radius: 12 } }).radius, 12)
+  assert.equal(S.resolve({ settings: { opacity: 10 } }).opacity, 100)
+  assert.deepEqual(S.customChoice("opacity", "75%"), { value: 75, label: "75%" })
+  assert.deepEqual(S.customChoice("radius", "20"), { value: 20, label: "20" })
+  assert.equal(S.customChoice("radius", "31"), null)
 })

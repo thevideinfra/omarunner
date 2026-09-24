@@ -1,10 +1,14 @@
 # omarunner
 
-A KRunner-style single-line launcher for Omarchy. It replaces the Omarchy root
-menu on `SUPER + SPACE`: with nothing typed it is one input line, and the first
-keystroke expands it into results drawn from the whole Omarchy menu tree, the
-installed applications, and files in your home directory. It is a fork of the first-party `omarchy.menu` plugin, so
-it follows the active Omarchy theme with no configuration.
+A KRunner- and COSMIC-launcher-style runner for Omarchy. It replaces the Omarchy
+root menu on `SUPER + SPACE`: with nothing typed it is one input line, and the
+first keystroke expands it into results grouped by kind, with the group name in
+a column on the left: applications, the whole Omarchy menu tree, session actions,
+folders, files, recent files, open windows, a calculator with unit conversion,
+and more. The first nine results launch with `Ctrl+1` to `Ctrl+9`.
+
+It is a fork of the first-party `omarchy.menu` plugin, so it follows the active
+Omarchy theme with no configuration.
 
 ## Installation
 
@@ -16,6 +20,17 @@ omarchy-restart-shell
 `install.sh` symlinks this checkout into `~/.config/omarchy/plugins/videinfra.omarunner`,
 enables the plugin in `~/.config/omarchy/shell.json` (backing the file up first),
 and symlinks the `omarunner` CLI into `~/.local/bin`.
+
+Optional packages, which `install.sh` checks for and names if missing:
+
+- `libqalculate` (provides `qalc`): unit, currency and function support in the
+  calculator. Plain arithmetic works without it.
+- `fzf`: fuzzy ranking for file search. Without it, file search matches names
+  literally.
+
+```bash
+sudo pacman -S libqalculate fzf
+```
 
 ## Keybindings
 
@@ -38,7 +53,8 @@ omarunner [toggle|summon|close|refresh|ping] [route]
 ```
 
 `toggle` is the default verb and `root` the default route. A route is a menu item
-id (`setup.power`) or an alias (`power`), the same routes `omarchy-menu` accepts.
+id (`setup.power`) or an alias (`power`), the same routes `omarchy-menu` accepts,
+plus `sources` and `settings` for omarunner's own pages.
 
 ## Uninstallation
 
@@ -54,8 +70,16 @@ Leaving the `hl.unbind` lines in place suppresses the Omarchy defaults for
 
 ## Development
 
-Run the unit tests with `npm test`. They cover the pure row-building logic in
-`RunnerModel.js`, the structure of `Runner.qml`, the CLI, and the uninstaller.
+Run the unit tests with `npm test`. They cover the pure logic of every source
+(`*Model.js`), row building and grouping in `RunnerModel.js`, the settings model,
+the structure of the QML files, the CLI, and the installer and uninstaller.
+
+A search source is a QML file exposing `sourceId`, `groupLabel`, `hint`,
+`maxRows`, `enabled`, `search(query, serial)`, `activate(value, modifiers)` and
+`signal results(int serial, var rows)`, optionally `claims(query)` (a prefix
+source), `leading` (rows above the menu groups) or `fallback` (rows only when
+nothing else matched). Add the instance to `root.sources` in `Runner.qml`; the
+Sources page picks it up from there.
 
 A symlinked plugin does not hot reload, so restart the shell after editing QML:
 
@@ -76,20 +100,68 @@ shared `AppLibrary` is not reachable from a third-party menu plugin, so the
 runner keeps its own source; the visible difference is that launching from
 omarunner does not raise the shell's launch OSD.
 
-## Search sources
+## What you can type
 
-Besides the Omarchy menu tree and installed applications, omarunner searches
-live sources as you type. The first one is Files: a `fd` search over `$HOME`.
-Press Enter on a file result to open it, Shift+Enter to reveal its containing
-folder instead.
+Results are grouped. Calculator and Open rows sit at the top; then Omarchy,
+Applications and Session, whichever holds the best match first; then Windows,
+Folders, Files and Recent. A search that matches nothing offers a web search.
 
-Each source can be toggled on or off from the Sources page: type "Sources" in
-the launcher, or run `omarunner toggle sources`. The setting is stored at
-`~/.config/omarchy/omarunner.json`. Hand edits to an existing file are picked
-up while the shell runs; if the file is first created after the shell started,
-restart the shell (or toggle a source once) for edits to be watched. A source
-missing from the file counts as enabled. If the file is not valid JSON,
-omarunner uses defaults and, on the next toggle, copies the broken file to
+| Type | Example | Enter | Shift+Enter |
+|---|---|---|---|
+| Apps, Omarchy menu | `firefox`, `theme` | launch / open | — |
+| Session | `lock`, `sleep`, `restart`, `power off` | run it | — |
+| Calculator | `2+2*3`, `=2` | copy the result | copy the result |
+| Unit conversion (qalc) | `10 km to mi`, `100f to c`, `5 usd in eur`, `20% of 300` | copy the result | copy the result |
+| Open | `github.com/x`, `https://…`, `localhost:8080`, `~/Downloads`, `/etc` | open it | copy the URL / reveal the folder |
+| Folders | `documents`, `docmuents`, `etc`, `hypr` | open the folder | terminal in the folder |
+| Files | `bindlua`, `invoice pdf` | open the file | reveal its folder |
+| Recent | part of a recently opened file's name | open | reveal its folder |
+| Windows | part of a window title or app name | focus it | focus it |
+| Command | `> htop` | run in a terminal | run in the background |
+| Kill | `kill firefox` | `kill` (SIGTERM) | `kill -KILL` |
+| Clipboard | `cb`, `cb git`, `cb scr` (images), `cb list` | paste into the previous window | copy only |
+| Web | `dd query`, `gg query`, `yt query`, `wiki query` | open in the browser | copy the URL |
+
+Prefixes (`cb`, `>`, `kill`, `dd`/`gg`/`yt`/`wiki` followed by a query) hand the
+whole list to that one source. Clipboard history appears only behind `cb`, so
+copied secrets never show in an ordinary search.
+
+Folder names forgive case and small typos. With fuzzy matching on (the
+default), letters typed in order also match: `frfox` finds Firefox, and files are
+ranked by `fzf`.
+
+## Keys
+
+| Key | Action |
+|---|---|
+| `Ctrl+1` … `Ctrl+9` | launch that row (add Shift for its Shift action) |
+| `Enter` / `Shift+Enter` | launch the selected row / its alternate action |
+| `Up` / `Down`, `PageUp` / `PageDown` | move the selection |
+| `Escape` | clear the query, then close |
+| `Backspace` / `Left` on an empty query | back out of a submenu |
+| `Ctrl+,` or the filter button (top left) | Sources page, press again to close |
+| `Ctrl+S` or the gear (top right) | Settings page, press again to close |
+
+Shift+click works like Shift+Enter.
+
+## Sources and settings
+
+The **Sources** page lists every search source with a short hint and a ✓ when
+enabled; Enter toggles one. Applications, Omarchy and Session can be switched
+off the same way.
+
+The **Settings** page holds: border, category column, corner radius,
+Ctrl+number hints, font, fuzzy matching, hint size, opacity, row height, rows
+before scrolling, text size and width. Each choice offers presets and a
+**Custom…** entry: open the setting and type a value (a number in the range the
+row names, or any font name), then pick the **Use …** row.
+
+Both pages are stored in `~/.config/omarchy/omarunner.json` (`sources`,
+`settings`, and `webSearchUrl` for the fallback web search, DuckDuckGo by
+default). Hand edits to an existing file are picked up while the shell runs; if
+the file is first created after the shell started, restart the shell (or toggle
+something once) for edits to be watched. If the file is not valid JSON,
+omarunner uses defaults and, on the next change, copies the broken file to
 `omarunner.json.bak` before writing a fresh one.
 
 ## Relationship to omarchy.menu

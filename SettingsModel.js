@@ -15,6 +15,10 @@ function CHOICES() {
       { value: 85, label: "Small" }, { value: 100, label: "Normal" }, { value: 115, label: "Large" }] },
     { key: "fontFamily", label: "Font", choices: [
       { value: "", label: "Omarchy default" }, { value: "sans-serif", label: "Sans" }, { value: "serif", label: "Serif" }] },
+    { key: "opacity", label: "Opacity", choices: [
+      { value: 70, label: "70%" }, { value: 85, label: "85%" }, { value: 95, label: "95%" }, { value: 100, label: "100%" }] },
+    { key: "radius", label: "Corner radius", choices: [
+      { value: -1, label: "Theme" }, { value: 0, label: "Square" }, { value: 6, label: "Slight" }, { value: 12, label: "Round" }] },
     { key: "border", label: "Border", choices: [
       { value: 0, label: "None" }, { value: 1, label: "1px" }, { value: 2, label: "2px" }, { value: 3, label: "3px" }] }
   ]
@@ -23,7 +27,8 @@ function CHOICES() {
 // Custom values a user may type on a setting's page: whole numbers in range.
 // fontFamily takes any font name instead.
 function RANGES() {
-  return { width: [300, 1600], rows: [3, 20], density: [18, 48], fontScale: [50, 200], hintScale: [50, 200], border: [0, 10] }
+  return { width: [300, 1600], rows: [3, 20], density: [18, 48], fontScale: [50, 200], hintScale: [50, 200], border: [0, 10],
+    opacity: [30, 100], radius: [0, 30] }
 }
 
 function inRange(key, value) {
@@ -40,7 +45,7 @@ function TOGGLES() {
 }
 
 function defaults() {
-  return { width: 510, rows: 9, density: 28, fontScale: 85, hintScale: 100, fontFamily: "", border: 2, fuzzy: true, categories: true, hints: true }
+  return { width: 510, rows: 9, density: 28, fontScale: 85, hintScale: 100, fontFamily: "", border: 2, opacity: 100, radius: -1, fuzzy: true, categories: true, hints: true }
 }
 
 function choiceFor(key) {
@@ -101,7 +106,7 @@ function customChoice(key, text) {
   if (!match) return null
   var value = Number(match[1])
   if (!inRange(key, value)) return null
-  var percent = key === "fontScale" || key === "hintScale"
+  var percent = key === "fontScale" || key === "hintScale" || key === "opacity"
   return { value: value, label: percent ? value + "%" : String(value) }
 }
 

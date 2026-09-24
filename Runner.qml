@@ -90,7 +90,9 @@ Item {
   // Bound to the central [menu] section in shell.toml via Color.qml.
   // Each color already includes its alpha companion (composed in the
   // singleton), so consumers can drop them straight into a Rectangle.
-  property color background: Color.menu.background
+  // Settings → Opacity scales the card background's own alpha.
+  property color background: Qt.rgba(Color.menu.background.r, Color.menu.background.g, Color.menu.background.b,
+                                     Color.menu.background.a * root.settings.opacity / 100)
   property color foreground: Color.menu.text
   property color border: Color.menu.border
   property var borderSpec: Border.surfaceSpec("menu", "border", border, root.settings.border)
@@ -101,7 +103,8 @@ Item {
   property var selectedBorderSpec: Border.surfaceSpec("menu", "selected-border", selectedBorder, 0)
   readonly property real rowReservedBorderLeft: Border.left(selectedBorderSpec)
   readonly property real rowReservedBorderRight: Border.right(selectedBorderSpec)
-  readonly property int cornerRadius: Style.cornerRadius
+  // Settings → Corner radius; -1 keeps the theme's radius.
+  readonly property int cornerRadius: root.settings.radius >= 0 ? Style.space(root.settings.radius) : Style.cornerRadius
   property int contentMargin: Style.space(8)
   property int headerHeight: Math.max(Style.space(28), root.fontHeading + Style.space(8))
   property int contentSpacing: Style.space(4)
@@ -123,7 +126,7 @@ Item {
   property int categoryWidth: root.showCategories ? Style.space(120) : 0
   property bool searchDivider: false
   property int layoutSerial: 0
-  property var sources: [calcSource, locationSource, commandSource, killSource, clipboardSource, folderSource, fileSource, recentSource]
+  property var sources: [calcSource, locationSource, commandSource, killSource, clipboardSource, windowSource, folderSource, fileSource, recentSource, webSource]
   property var sourceRows: ({})
   property int searchSerial: 0
   property var sectionLabels: ({})
@@ -571,13 +574,14 @@ Item {
     for (var i = 0; i < root.sources.length; i++) {
       var s = root.sources[i]
       if (!s.enabled) continue
-      // A prefix source ("cb", "kill", ">") shows rows only while its prefix
-      // is typed, even if an older reply is still stored.
+      // A prefix-only source ("cb", "kill", ">") shows rows only while its
+      // prefix is typed, even if an older reply is still stored. Web has a
+      // prefix too but also answers unprefixed queries with its fallback row.
       var claimsNow = root.sourceClaims(s, root.filterText.trim())
-      var prefixOnly = typeof s.claims === "function"
+      var prefixOnly = typeof s.claims === "function" && s.fallback !== true
       groups.push({ sourceId: s.sourceId, groupLabel: s.groupLabel, maxRows: s.maxRows,
         rows: prefixOnly && !claimsNow ? [] : (root.sourceRows[s.sourceId] || []),
-        leading: s.leading === true, exclusive: claimsNow })
+        leading: s.leading === true, exclusive: claimsNow, fallback: s.fallback === true })
     }
     return groups
   }
@@ -830,6 +834,17 @@ Item {
   ClipboardSource {
     id: clipboardSource
     onResults: function(serial, rows) { root.acceptSourceRows(clipboardSource.sourceId, serial, rows) }
+  }
+
+  WindowSource {
+    id: windowSource
+    onResults: function(serial, rows) { root.acceptSourceRows(windowSource.sourceId, serial, rows) }
+  }
+
+  WebSource {
+    id: webSource
+    searchUrl: sourceConfig.config.webSearchUrl || ""
+    onResults: function(serial, rows) { root.acceptSourceRows(webSource.sourceId, serial, rows) }
   }
 
   FolderSource {
@@ -1511,10 +1526,11 @@ Item {
                 onPositionChanged: function(mouse) {
                   root.selectFromPointer(row.index, rowSurface, mouse)
                 }
-                onClicked: {
+                // Modifiers pass through, so Shift+click works like Shift+Enter.
+                onClicked: function(mouse) {
                   root.cursorActive = true
                   root.selectedIndex = row.index
-                  root.activateIndex(row.index, true)
+                  root.activateIndex(row.index, true, mouse.modifiers)
                 }
               }
             }
