@@ -160,9 +160,9 @@ test("rows 1 to 9 show their Ctrl shortcut", () => {
 })
 
 test("the filter button and Ctrl+comma open the Sources page", () => {
-  assert.match(qml, /function openSourcesPage\(\)/)
+  assert.match(qml, /function toggleSourcesPage\(\)/)
   assert.ok(qml.includes("event.key === Qt.Key_Comma"))
-  assert.match(qml, /id: filterButton[\s\S]*?onClicked: root\.openSourcesPage\(\)/)
+  assert.match(qml, /id: filterButton[\s\S]*?onClicked: root\.toggleSourcesPage\(\)/)
 })
 
 test("text is scaled locally, never through the shell's font tokens", () => {
@@ -225,9 +225,9 @@ test("the runner registers every source and gives claimed queries to their sourc
 // -- Settings page and fuzzy matching.
 
 test("the gear button and Ctrl+S open the Settings page", () => {
-  assert.match(qml, /function openSettingsPage\(\)/)
+  assert.match(qml, /function toggleSettingsPage\(\)/)
   assert.ok(qml.includes("event.key === Qt.Key_S"))
-  assert.match(qml, /id: gearButton[\s\S]*?onClicked: root\.openSettingsPage\(\)/)
+  assert.match(qml, /id: gearButton[\s\S]*?onClicked: root\.toggleSettingsPage\(\)/)
 })
 
 test("layout values come from the resolved settings", () => {
@@ -260,10 +260,21 @@ test("every source has a hint for the Sources page, shown without a query", asyn
   for (const file of SOURCE_FILES) {
     assert.match(await readFile(join(root, file), "utf8"), /property string hint: "[^"]+"/, file)
   }
-  assert.ok(qml.includes('(root.filterText || row.kind === "source-toggle") && row.detail.length > 0'))
+  assert.ok(qml.includes('(root.filterText || row.kind === "source-toggle" || row.kind === "setting-custom") && row.detail.length > 0'))
 })
 
 test("category captions, details and Ctrl+N hints use the Hint size setting", () => {
   assert.ok(qml.includes("root.fontBody * root.settings.hintScale / 100"))
   assert.equal((qml.match(/font\.pixelSize: root\.fontHint/g) || []).length, 3)
+})
+
+test("a second press of either page button closes its page", () => {
+  assert.ok(qml.includes('if (root.inPage(page)) { root.closePage(page); return }'))
+  assert.ok(qml.includes('return root.activeMenu === page || root.activeMenu.indexOf(page + ".") === 0'))
+  assert.ok(qml.includes('root.closePage(page === "sources" ? "settings" : "sources")'))
+})
+
+test("typing on a setting's page offers the typed value", () => {
+  assert.ok(qml.includes("SettingsModel.customDisplayRow(root.activeMenu, root.filterText)"))
+  assert.ok(qml.includes('row.kind === "setting-custom"'))
 })

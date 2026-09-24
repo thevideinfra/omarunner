@@ -460,6 +460,9 @@ Item {
     root.sectionLabels = built.sectionLabels || ({})
     root.firstSection = built.rows.length > 0 ? String(built.rows[0].section || "") : ""
 
+    // On a setting's page, a typed value becomes a "Use …" row at the top.
+    var typed = SettingsModel.customDisplayRow(root.activeMenu, root.filterText)
+    if (typed) displayModel.append(typed)
     for (var k = 0; k < built.rows.length; k++) displayModel.append(built.rows[k])
     layoutSerial += 1
 
@@ -660,15 +663,25 @@ Item {
     return (event.modifiers & Qt.ShiftModifier) ? shifted.indexOf(event.key) : -1
   }
 
-  // The header's gear button and Ctrl+S open the Settings page.
-  function openSettingsPage() {
-    if (root.activeMenu !== "settings") root.setActiveMenu("settings", true, false)
+  // Sources (filter button, Ctrl+,) and Settings (gear, Ctrl+S) toggle: a
+  // second press closes the page, back to wherever it was opened from.
+  function inPage(page) {
+    return root.activeMenu === page || root.activeMenu.indexOf(page + ".") === 0
   }
 
-  // The header's filter button and Ctrl+, both land on the Sources page.
-  function openSourcesPage() {
-    if (root.activeMenu !== "sources") root.setActiveMenu("sources", true, false)
+  function closePage(page) {
+    for (var guard = 0; guard < 16 && root.inPage(page); guard++) root.goBack()
   }
+
+  function togglePage(page) {
+    if (root.inPage(page)) { root.closePage(page); return }
+    root.closePage(page === "sources" ? "settings" : "sources")
+    root.setActiveMenu(page, true, false)
+  }
+
+  function toggleSettingsPage() { root.togglePage("settings") }
+
+  function toggleSourcesPage() { root.togglePage("sources") }
 
   function goBack() {
     if (root.activeMenu === "root") return false
@@ -704,6 +717,8 @@ Item {
       // Pick, then return to the Settings page, whose row shows the new value.
       sourceConfig.apply(SettingsModel.applyOption(sourceConfig.config, row.value))
       root.goBack()
+    } else if (row.kind === "setting-custom") {
+      // Only a reminder; typing the value offers the row that applies it.
     } else if (row.kind === "setting-toggle") {
       sourceConfig.apply(SettingsModel.toggled(sourceConfig.config, row.value))
     } else if (row.kind === "source") {
@@ -1102,10 +1117,10 @@ Item {
             }
             event.accepted = true
           } else if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_S) {
-            root.openSettingsPage()
+            root.toggleSettingsPage()
             event.accepted = true
           } else if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_Comma) {
-            root.openSourcesPage()
+            root.toggleSourcesPage()
             event.accepted = true
           } else if (event.key === Qt.Key_Delete) {
             root.requestDeleteSelected()
@@ -1202,7 +1217,7 @@ Item {
               anchors.fill: parent
               hoverEnabled: true
               cursorShape: Qt.PointingHandCursor
-              onClicked: root.openSourcesPage()
+              onClicked: root.toggleSourcesPage()
             }
           }
 
@@ -1245,7 +1260,7 @@ Item {
               anchors.fill: parent
               hoverEnabled: true
               cursorShape: Qt.PointingHandCursor
-              onClicked: root.openSettingsPage()
+              onClicked: root.toggleSettingsPage()
             }
           }
 
@@ -1428,7 +1443,7 @@ Item {
                     text: row.detail
                     // Search results show their detail; the Sources page always
                     // shows each source's hint.
-                    visible: (root.filterText || row.kind === "source-toggle") && row.detail.length > 0 && width > Style.space(24)
+                    visible: (root.filterText || row.kind === "source-toggle" || row.kind === "setting-custom") && row.detail.length > 0 && width > Style.space(24)
                     color: row.textColor
                     opacity: 0.52
                     font.family: root.textFamily

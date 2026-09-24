@@ -20,6 +20,17 @@ function CHOICES() {
   ]
 }
 
+// Custom values a user may type on a setting's page: whole numbers in range.
+// fontFamily takes any font name instead.
+function RANGES() {
+  return { width: [300, 1600], rows: [3, 20], density: [18, 48], fontScale: [50, 200], hintScale: [50, 200], border: [0, 10] }
+}
+
+function inRange(key, value) {
+  var range = RANGES()[key]
+  return !!range && typeof value === "number" && Math.floor(value) === value && value >= range[0] && value <= range[1]
+}
+
 function TOGGLES() {
   return [
     { key: "fuzzy", label: "Fuzzy matching" },
@@ -38,9 +49,9 @@ function choiceFor(key) {
   return null
 }
 
-// Merges config.settings over the defaults. Choice keys must hold one of
-// their preset values, except fontFamily, which accepts any family name a
-// hand-edit puts there; toggles must be booleans.
+// Merges config.settings over the defaults. Choice keys must hold a preset
+// value or a whole number in their custom range; fontFamily accepts any
+// family name; toggles must be booleans.
 function resolve(config) {
   var out = defaults()
   var given = config && config.settings && typeof config.settings === "object" && !Array.isArray(config.settings) ? config.settings : ({})
@@ -49,6 +60,7 @@ function resolve(config) {
     var key = list[i].key
     if (!(key in given)) continue
     if (key === "fontFamily") { if (typeof given[key] === "string") out[key] = given[key]; continue }
+    if (inRange(key, given[key])) { out[key] = given[key]; continue }
     for (var c = 0; c < list[i].choices.length; c++) if (list[i].choices[c].value === given[key]) out[key] = given[key]
   }
   var toggles = TOGGLES()
@@ -65,11 +77,51 @@ function withSetting(config, key, value) {
 
 function toggled(config, key) { return withSetting(config, key, !resolve(config)[key]) }
 
+function isPreset(key, value) {
+  var choice = choiceFor(key)
+  if (!choice) return false
+  for (var i = 0; i < choice.choices.length; i++) if (choice.choices[i].value === value) return true
+  return false
+}
+
 function currentLabel(key, value) {
   var choice = choiceFor(key)
   if (!choice) return String(value)
   for (var i = 0; i < choice.choices.length; i++) if (choice.choices[i].value === value) return choice.choices[i].label
-  return String(value)
+  return "Custom (" + value + ")"
+}
+
+// Typed input on a setting's page: { value, label } or null. A trailing "%"
+// or "px" is allowed; percent settings keep it in the label.
+function customChoice(key, text) {
+  var raw = String(text || "").trim()
+  if (key === "fontFamily") return raw && raw.length <= 64 ? { value: raw, label: raw } : null
+  if (!RANGES()[key]) return null
+  var match = /^(\d+)\s*(%|px)?$/i.exec(raw)
+  if (!match) return null
+  var value = Number(match[1])
+  if (!inRange(key, value)) return null
+  var percent = key === "fontScale" || key === "hintScale"
+  return { value: value, label: percent ? value + "%" : String(value) }
+}
+
+// While typing on "settings.<key>", the typed value as a pickable row, in the
+// display-row shape buildRows produces.
+function customDisplayRow(activeMenu, text) {
+  var menu = String(activeMenu || "")
+  if (menu.indexOf("settings.") !== 0) return null
+  var key = menu.slice(9)
+  var choice = customChoice(key, text)
+  if (!choice) return null
+  return { itemId: menu + ".typed", kind: "setting-option", icon: "", iconFont: "", appIcon: "", appId: "",
+    label: "Use " + choice.label, target: "", detail: "", path: "", childCount: 0, action: "", provider: "",
+    score: 0, section: "", sourceId: "", value: key + "=" + choice.value }
+}
+
+function customHint(key) {
+  if (key === "fontFamily") return "Type a font name"
+  var range = RANGES()[key]
+  return "Type a number, " + range[0] + "–" + range[1]
 }
 
 // "12" -> 12 for numeric keys; option rows carry their value as a string role.
@@ -105,6 +157,12 @@ function pageRows(settingsIn) {
         value: key + "=" + choice.value, order: 0 })
       checked[id] = settings[key] === choice.value
     }
+    // Custom…: a reminder of what may be typed here, ticked for a custom value.
+    var customId = menuId + ".custom"
+    group.push({ id: customId, parent: menuId, kind: "setting-custom", icon: "", iconFont: "", label: "Custom…", title: "",
+      target: "", description: customHint(key), action: "", provider: "", aliases: [], when: "", checked: "config",
+      value: key, order: 0 })
+    checked[customId] = !isPreset(key, settings[key])
     entries.push({ name: list[i].label, rows: group })
   }
   var toggles = TOGGLES()
@@ -137,5 +195,6 @@ function applyOption(config, optionValue) {
 
 if (typeof module !== "undefined") {
   module.exports = { defaults: defaults, resolve: resolve, withSetting: withSetting, toggled: toggled,
-    currentLabel: currentLabel, pageRows: pageRows, applyOption: applyOption }
+    currentLabel: currentLabel, pageRows: pageRows, applyOption: applyOption, customChoice: customChoice,
+    customDisplayRow: customDisplayRow }
 }

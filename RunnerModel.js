@@ -326,7 +326,8 @@ function fuzzyGaps(needle, text) {
 
 // The query with spaces removed, when long enough to match fuzzily.
 function isConfigRow(entry) {
-  return !!entry && (entry.kind === "source-toggle" || entry.kind === "setting-option" || entry.kind === "setting-toggle")
+  return !!entry && (entry.kind === "source-toggle" || entry.kind === "setting-option" || entry.kind === "setting-toggle" ||
+    entry.kind === "setting-custom")
 }
 
 function fuzzyNeedle(query) {
