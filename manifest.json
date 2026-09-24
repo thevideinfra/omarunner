@@ -2,11 +2,13 @@
   "schemaVersion": 1,
   "id": "videinfra.omarunner",
   "name": "omarunner",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "thevideinfra",
   "license": "MIT",
-  "description": "Single-line KRunner-style launcher for Omarchy, searching the Omarchy menu tree, installed applications, and files in your home directory",
-  "kinds": ["menu"],
+  "description": "KRunner-style launcher for Omarchy: apps, the Omarchy menu, files, folders, open windows, calculator and unit conversion, clipboard history, shell commands and web search, with Ctrl+number quick launch and in-launcher settings",
+  "kinds": [
+    "menu"
+  ],
   "keepLoaded": true,
   "entryPoints": {
     "menu": "Runner.qml"

@@ -687,7 +687,7 @@ function buildRows(items, itemOrder, whenResults, checkedResults, activeMenu, qu
   }
 
   // The root search feeds the category column. Source groups come as
-  // { sourceId, groupLabel, maxRows, rows, leading, exclusive }.
+  // { sourceId, groupLabel, maxRows, rows, leading, exclusive, fallback }.
   var groups = Array.isArray(sourceGroups) ? sourceGroups : []
   var appendSource = function(group) {
     if (!group || !Array.isArray(group.rows) || group.rows.length === 0) return
@@ -737,6 +737,10 @@ function buildRows(items, itemOrder, whenResults, checkedResults, activeMenu, qu
     labels[filled[f].section] = filled[f].label
   }
 
-  for (var tgx = 0; tgx < groups.length; tgx++) if (groups[tgx] && !groups[tgx].leading) appendSource(groups[tgx])
+  for (var tgx = 0; tgx < groups.length; tgx++)
+    if (groups[tgx] && !groups[tgx].leading && !groups[tgx].fallback) appendSource(groups[tgx])
+
+  // Fallback groups (the web search row) only fill an otherwise empty list.
+  if (rows.length === 0) for (var fb = 0; fb < groups.length; fb++) if (groups[fb] && groups[fb].fallback) appendSource(groups[fb])
   return { activeMenu: active, rows: rows, searchDivider: divider, sectionLabels: labels }
 }

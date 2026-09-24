@@ -22,6 +22,17 @@ echo "Linked $TARGET_DIR -> $SOURCE_DIR"
 ln -nsf "$SOURCE_DIR/bin/omarunner" "$BIN_DIR/omarunner"
 echo "Linked $BIN_DIR/omarunner"
 
+# Optional programs: omarunner runs without them, with the named search
+# reduced. Omarchy ships the rest (fd, wl-copy, wtype, hyprctl, jq).
+missing=()
+command -v qalc >/dev/null 2>&1 || missing+=("libqalculate (qalc): unit and currency conversion in the calculator")
+command -v fzf >/dev/null 2>&1 || missing+=("fzf: fuzzy ranking for file search")
+command -v fd >/dev/null 2>&1 || missing+=("fd: file and folder search")
+if (( ${#missing[@]} > 0 )); then
+  echo "Optional packages not found; install with pacman for the full launcher:" >&2
+  for item in "${missing[@]}"; do echo "  - $item" >&2; done
+fi
+
 if [[ ! -f $SHELL_CONFIG ]]; then
   echo "No $SHELL_CONFIG found; add {\"id\": \"$PLUGIN_ID\"} to its plugins array to enable." >&2
   exit 0

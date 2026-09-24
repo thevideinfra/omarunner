@@ -374,3 +374,16 @@ test("fuzzy needs the first letter at a word start and a tight spread", () => {
   // a, then letters scattered across a long label: too loose
   assert.equal(RunnerModel.fuzzyWordStart("ade", "a very long label with d then e"), false)
 })
+
+test("a fallback group shows only when nothing else matched", () => {
+  const { items, itemOrder } = appsFixture()
+  const web = { sourceId: "web", groupLabel: "Web", maxRows: 1, fallback: true, rows: [sourceRow("Search the web", "web")] }
+  const withHits = RunnerModel.buildRows(items, itemOrder, {}, {}, "root", "theme", [web])
+  assert.equal(withHits.rows.some(x => x.sourceId === "web"), false)
+  assert.equal("source:web" in withHits.sectionLabels, false)
+  const alone = RunnerModel.buildRows(items, itemOrder, {}, {}, "root", "zzqx", [web])
+  assert.deepEqual(alone.rows.map(x => x.label), ["Search the web"])
+  const files = { sourceId: "files", groupLabel: "Files", maxRows: 5, rows: [sourceRow("zzqx.txt", "files")] }
+  const afterFiles = RunnerModel.buildRows(items, itemOrder, {}, {}, "root", "zzqx", [files, web])
+  assert.deepEqual(afterFiles.rows.map(x => x.label), ["zzqx.txt"])
+})

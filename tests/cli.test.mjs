@@ -131,3 +131,19 @@ test("the real installed plugin symlink is untouched by this suite", async (t) =
 
   assert.ok(stat.isSymbolicLink(), `${realTarget} exists but is not a symlink`)
 })
+
+// -- install.sh names optional packages that are missing, and still succeeds.
+
+test("install.sh warns about missing optional packages and still installs", async () => {
+  const { symlink: link, rm } = await import("node:fs/promises")
+  const home = await mkdtemp(join(tmpdir(), "omarunner-install-"))
+  const pathDir = join(home, "bin-minimal")
+  await mkdir(pathDir)
+  for (const tool of ["bash", "ln", "mkdir", "dirname", "env"]) await link(`/usr/bin/${tool}`, join(pathDir, tool))
+  const { stderr } = await run(join(root, "install.sh"), [], { env: { HOME: home, PATH: pathDir } })
+  assert.match(stderr, /libqalculate \(qalc\)/)
+  assert.match(stderr, /fzf: fuzzy ranking/)
+  assert.match(stderr, /fd: file and folder search/)
+  assert.equal(await readlink(join(home, ".config", "omarchy", "plugins", "videinfra.omarunner")), root)
+  await rm(home, { recursive: true, force: true })
+})
