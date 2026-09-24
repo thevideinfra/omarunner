@@ -4,7 +4,8 @@ import QtQuick
 import qs.Commons
 import "FileModel.js" as FileModel
 
-// Files source: one fd process per settled query; the previous run is killed.
+// Files source: one fd (or fd | fzf) run per settled query; LatestProcess
+// kills the previous run and drops its reply.
 Item {
   id: root
   property string sourceId: "files"
@@ -19,41 +20,20 @@ Item {
   readonly property bool useFzf: root.fuzzy && root.fzfAvailable
   signal results(int serial, var rows)
 
-  // A killed run still delivers onExited, possibly after the next search was
-  // requested. So a search while a run is live only records itself as pending;
-  // onExited starts it. proc.serial therefore always names the run that exited.
-  property var pendingArgs: null
-  property bool pendingFzf: false
-  property int pendingSerial: 0
-  property string pendingQuery: ""
+  // Whether the run for each serial was fzf-ranked, so its rows keep fzf's
+  // order. Only the latest serials matter; older entries are dropped.
+  property var rankedBySerial: ({})
 
   function search(query, serial) {
     var args = root.useFzf ? FileModel.fzfArgs(query, root.home) : FileModel.fdArgs(query, root.home)
-    if (args.length === 0) { root.cancel(); root.results(serial, []); return }
-    if (proc.running) {
-      root.pendingArgs = args
-      root.pendingFzf = root.useFzf
-      root.pendingSerial = serial
-      root.pendingQuery = query
-      proc.running = false
-      return
-    }
-    root.start(args, serial, query, root.useFzf)
+    if (args.length === 0) { runner.cancel(); root.results(serial, []); return }
+    var ranked = ({})
+    ranked[serial] = root.useFzf
+    root.rankedBySerial = ranked
+    runner.run(args, serial, query)
   }
 
-  function start(args, serial, query, ranked) {
-    proc.ranked = ranked
-    proc.serial = serial
-    proc.query = query
-    proc.collected = ""
-    proc.command = args
-    proc.running = true
-  }
-
-  function cancel() {
-    root.pendingArgs = null
-    proc.running = false
-  }
+  function cancel() { runner.cancel() }
 
   function activate(value, modifiers) {
     var command = (modifiers & Qt.ShiftModifier) ? FileModel.revealCommand(value) : FileModel.openCommand(value)
@@ -66,20 +46,11 @@ Item {
     onExited: function(exitCode) { root.fzfAvailable = exitCode === 0 }
   }
 
-  Process {
-    id: proc
-    property int serial: 0
-    property string query: ""
-    property string collected: ""
-    property bool ranked: false
-    stdout: SplitParser { onRead: function(data) { proc.collected += data + "\n" } }
-    onExited: function(exitCode) {
-      root.results(proc.serial, exitCode === 0 ? FileModel.fileRows(proc.collected, root.home, proc.query, proc.ranked) : [])
-      if (root.pendingArgs) {
-        var args = root.pendingArgs
-        root.pendingArgs = null
-        root.start(args, root.pendingSerial, root.pendingQuery, root.pendingFzf)
-      }
+  LatestProcess {
+    id: runner
+    onFinished: function(serial, query, exitCode, output) {
+      var ranked = root.rankedBySerial[serial] === true
+      root.results(serial, exitCode === 0 ? FileModel.fileRows(output, root.home, query, ranked) : [])
     }
   }
 }

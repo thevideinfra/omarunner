@@ -34,6 +34,12 @@ function EXCLUDES() {
   return [".git", "node_modules", ".cache", ".cargo", ".rustup", ".npm", ".oh-my-zsh", "go/pkg", ".local/share"]
 }
 
+// encodeURI leaves "#" and "?" alone, which a file URL reads as a fragment
+// and a query; escape them so such images still get a thumbnail.
+function fileUrl(path) {
+  return "file://" + encodeURI(String(path)).replace(/#/g, "%23").replace(/\?/g, "%3F")
+}
+
 function extension(path) {
   var base = String(path || "").split("/").pop()
   var dot = base.lastIndexOf(".")
@@ -66,7 +72,7 @@ function fileRow(path, home) {
   var image = isImage(full)
   return {
     itemId: "files." + full, kind: "source", icon: image ? "" : iconName(full), iconFont: "",
-    appIcon: image ? "file://" + encodeURI(full) : "", appId: "", label: full.split("/").pop(),
+    appIcon: image ? fileUrl(full) : "", appId: "", label: full.split("/").pop(),
     target: "", detail: detail, path: "", childCount: 0, action: "", provider: "", score: 0,
     section: "", sourceId: "files", value: full
   }

@@ -62,7 +62,6 @@ const PS = `    1 systemd /sbin/init
 
 test("kill claims only its keyword", () => {
   assert.equal(K.claims("kill fire"), true)
-  assert.equal(K.claims("kill"), true)
   assert.equal(K.claims("killall"), false)
   assert.equal(K.filter("kill  fire fox"), "fire fox")
 })
@@ -215,4 +214,23 @@ test("the start of an image word lists images first, then matching text", () => 
   assert.deepEqual(Cb.matches(history, "im").map(e => e.index), [1, 3])
   assert.deepEqual(Cb.matches(history, "s").map(e => e.index), [0])
   assert.deepEqual(Cb.matches(history, "screenshot").map(e => e.index), [1, 3])
+})
+
+// -- Review fixes.
+
+test("kill needs a name after it; a bare kill is an ordinary search", () => {
+  assert.equal(K.claims("kill"), false)
+  assert.equal(K.claims("kill f"), true)
+  assert.equal(K.claims("killer"), false)
+})
+
+test("recent fuzzy hits start at a word and keep letters close", () => {
+  const entries = [{ path: "/home/ks/a/report-final.odt", modified: "2" }, { path: "/home/ks/a/ranoapbrcdt.txt", modified: "1" }]
+  assert.deepEqual(R.matches(entries, "rprt", true), ["/home/ks/a/report-final.odt"])
+  assert.deepEqual(R.matches(entries, "fnl", true), ["/home/ks/a/report-final.odt"])
+})
+
+test("image thumbnails escape # and ?", () => {
+  const history = [{ type: "image", mime: "image/png", path: "/tmp/a #1?.png" }]
+  assert.equal(Cb.row(Cb.matches(history, "img")[0]).appIcon, "file:///tmp/a%20%231%3F.png")
 })

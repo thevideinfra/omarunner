@@ -45,13 +45,16 @@ function matches(entries, query, fuzzy) {
   return front.concat(back, loose)
 }
 
+// Letters in order from a word start, skipping no more letters than were
+// typed: the same rule as the menu's fuzzy matching.
 function inOrder(needle, text) {
-  var pos = -1
-  for (var i = 0; i < needle.length; i++) {
-    pos = text.indexOf(needle.charAt(i), pos + 1)
-    if (pos < 0) return false
+  for (var start = text.indexOf(needle.charAt(0)); start >= 0; start = text.indexOf(needle.charAt(0), start + 1)) {
+    if (start > 0 && /[a-z0-9]/.test(text.charAt(start - 1))) continue
+    var pos = start
+    for (var i = 1; i < needle.length && pos >= 0; i++) pos = text.indexOf(needle.charAt(i), pos + 1)
+    if (pos >= 0 && pos - start + 1 - needle.length <= needle.length) return true
   }
-  return true
+  return false
 }
 
 if (typeof module !== "undefined") {

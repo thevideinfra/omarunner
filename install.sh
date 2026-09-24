@@ -23,7 +23,8 @@ ln -nsf "$SOURCE_DIR/bin/omarunner" "$BIN_DIR/omarunner"
 echo "Linked $BIN_DIR/omarunner"
 
 # Optional programs: omarunner runs without them, with the named search
-# reduced. Omarchy ships the rest (fd, wl-copy, wtype, hyprctl, jq).
+# reduced. Omarchy normally ships fd, but it is checked too in case it was
+# removed; wl-copy, wtype, hyprctl and jq are part of the base system.
 missing=()
 command -v qalc >/dev/null 2>&1 || missing+=("libqalculate (qalc): unit and currency conversion in the calculator")
 command -v fzf >/dev/null 2>&1 || missing+=("fzf: fuzzy ranking for file search")

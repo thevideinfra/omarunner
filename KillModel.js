@@ -1,6 +1,8 @@
 // Kill source: "kill name" lists the user's matching processes. Enter sends
 // SIGTERM, Shift+Enter SIGKILL.
-function claims(query) { return /^kill(\s|$)/i.test(String(query || "").trim()) }
+// A name must follow: a bare "kill" (or "killer") stays an ordinary search
+// instead of blanking the list.
+function claims(query) { return /^kill\s+\S/i.test(String(query || "").trim()) }
 
 function filter(query) { return claims(query) ? String(query).trim().slice(4).trim() : "" }
 
