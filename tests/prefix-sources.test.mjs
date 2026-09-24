@@ -202,3 +202,17 @@ test("clipboard rows only exist behind the cb prefix", () => {
   assert.deepEqual(Cb.rowsFor(history, "cb git", 8).map(r => r.label), ["git push origin master", "git status"])
   assert.deepEqual(Cb.rowsFor(history, "cb list", 8).map(r => r.value), ["list:"])
 })
+
+test("the start of an image word lists images first, then matching text", () => {
+  const history = [
+    { type: "text", text: "./script.sh --fast" },
+    { type: "image", mime: "image/png", path: "/tmp/a.png" },
+    { type: "text", text: "unrelated" },
+    { type: "image", mime: "image/png", path: "/tmp/b.png" }
+  ]
+  assert.deepEqual(Cb.matches(history, "scr").map(e => e.index), [1, 3, 0])
+  assert.deepEqual(Cb.matches(history, "sc").map(e => e.index), [1, 3, 0])
+  assert.deepEqual(Cb.matches(history, "im").map(e => e.index), [1, 3])
+  assert.deepEqual(Cb.matches(history, "s").map(e => e.index), [0])
+  assert.deepEqual(Cb.matches(history, "screenshot").map(e => e.index), [1, 3])
+})
