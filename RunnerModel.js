@@ -309,7 +309,53 @@ function descriptionTextMatches(query, text) {
   return true
 }
 
-function matchesQuery(entry, query, visible) {
+// Letters of needle in order inside text: the number of skipped letters
+// between the first and last hit, or -1 when they do not all appear in order.
+function fuzzyGaps(needle, text) {
+  var n = String(needle || "")
+  var t = String(text || "")
+  var pos = -1
+  var first = -1
+  for (var i = 0; i < n.length; i++) {
+    pos = t.indexOf(n.charAt(i), pos + 1)
+    if (pos < 0) return -1
+    if (first < 0) first = pos
+  }
+  return n.length === 0 ? -1 : pos - first + 1 - n.length
+}
+
+// The query with spaces removed, when long enough to match fuzzily.
+function isConfigRow(entry) {
+  return !!entry && (entry.kind === "source-toggle" || entry.kind === "setting-option" || entry.kind === "setting-toggle")
+}
+
+function fuzzyNeedle(query) {
+  var compact = String(query || "").toLowerCase().replace(/\s+/g, "")
+  return compact.length >= 3 ? compact : ""
+}
+
+// Fuzzy hits must start where a word starts ("frfox" in Firefox, "hapt" in
+// Touchpad Haptics) and keep the letters close: no more skipped letters than
+// typed ones. Without both, long labels like "Clipboard" match almost any
+// three letters.
+function fuzzyWordStart(needle, text) {
+  var n = String(needle || "")
+  var t = String(text || "")
+  if (!n) return false
+  for (var start = t.indexOf(n.charAt(0)); start >= 0; start = t.indexOf(n.charAt(0), start + 1)) {
+    if (start > 0 && /[a-z0-9]/.test(t.charAt(start - 1))) continue
+    var gaps = fuzzyGaps(n, t.slice(start))
+    if (gaps >= 0 && gaps <= n.length) return true
+  }
+  return false
+}
+
+function fuzzyMatches(entry, query) {
+  var needle = fuzzyNeedle(query)
+  return needle !== "" && fuzzyWordStart(needle, String(entry.label || "").toLowerCase())
+}
+
+function matchesQuery(entry, query, visible, fuzzy) {
   if (!entry || entry.id === "root") return false
   if (!visible) return false
 
@@ -321,13 +367,19 @@ function matchesQuery(entry, query, visible) {
     if (!terms[i]) continue
     if (nameText.indexOf(terms[i]) >= 0) continue
     if (termInSearchWords(terms[i], descriptionText)) continue
-    return false
+    return fuzzy === true && fuzzyMatches(entry, query)
   }
 
   return true
 }
 
-function searchScore(items, entry, query) {
+function aliasEquals(entry, needle) {
+  var values = Array.isArray(entry.aliases) ? entry.aliases : []
+  for (var i = 0; i < values.length; i++) if (searchableToken(values[i]).toLowerCase() === needle) return true
+  return false
+}
+
+function searchScore(items, entry, query, fuzzy) {
   var needle = String(query || "").toLowerCase().trim()
   var label = entry.label.toLowerCase()
   var nameText = nameSearchText(entry)
@@ -340,8 +392,15 @@ function searchScore(items, entry, query) {
   else if (entry.kind === "app" && label.split(/\s+/).indexOf(needle) >= 0) score = 0
   else if (label.indexOf(needle) === 0) score = 10
   else if (label.indexOf(needle) >= 0) score = 30
+  // An alias naming the query exactly: an action ("restart" on Reboot) is the
+  // thing asked for; a submenu with that alias (Update) only groups related
+  // entries, so it ranks below.
+  else if (aliasEquals(entry, needle)) score = (entry.kind === "menu" || entry.kind === "link") ? 20 : 5
   else if (nameText.indexOf(needle) >= 0) score = 40
   else if (descriptionTextMatches(needle, descriptionText)) score = 60
+  // A fuzzy-only hit ranks below everything else, tighter hits first.
+  else if (fuzzy === true && !matchesQuery(entry, query, true, false) && fuzzyMatches(entry, query))
+    score = 85 + Math.min(9, fuzzyGaps(fuzzyNeedle(query), label))
 
   if (entry.kind === "menu" || entry.kind === "link") score -= 2
   // App rows sort after all menu items, so they lose the tiebreak below to an
@@ -483,6 +542,10 @@ if (typeof module !== "undefined") {
   module.exports = {
     guardReaders: GUARD_READERS,
     guardScript: guardScript,
+    withSessionAliases: withSessionAliases,
+    fuzzyGaps: fuzzyGaps,
+    fuzzyWordStart: fuzzyWordStart,
+    isConfigRow: isConfigRow,
     stripJsonc: stripJsonc,
     normalizeAliases: normalizeAliases,
     normalizeItem: normalizeItem,
@@ -517,7 +580,39 @@ if (typeof module !== "undefined") {
 // bare input line, which is the whole point of omarunner. Inside a submenu an
 // empty query still lists that submenu's children, because drill-down (Style >
 // Theme, Apps > ...) has to keep working.
-function buildRows(items, itemOrder, whenResults, checkedResults, activeMenu, query, sourceGroups) {
+// KRunner session words for the System submenu, so "restart" finds Reboot.
+function SESSION_ALIASES() {
+  return {
+    "system.lock": ["lock screen"],
+    "system.suspend": ["sleep"],
+    "system.logout": ["log out", "sign out", "logoff"],
+    "system.reboot": ["restart"],
+    "system.shutdown": ["power off", "poweroff", "halt", "turn off"]
+  }
+}
+
+function withSessionAliases(items) {
+  var extra = SESSION_ALIASES()
+  var out = ({})
+  for (var id in items) {
+    var entry = items[id]
+    if (entry && extra[id]) {
+      var copy = ({})
+      for (var key in entry) copy[key] = entry[key]
+      var aliases = Array.isArray(entry.aliases) ? entry.aliases.slice() : []
+      for (var a = 0; a < extra[id].length; a++) if (aliases.indexOf(extra[id][a]) < 0) aliases.push(extra[id][a])
+      copy.aliases = aliases
+      entry = copy
+    }
+    out[id] = entry
+  }
+  return out
+}
+
+// hiddenGroups: { apps: true, menu: true, session: true } switches a menu-tree group off in
+// the root search (Sources page); submenus are never filtered.
+// fuzzy: letters-in-order matching for queries of 3+ characters.
+function buildRows(items, itemOrder, whenResults, checkedResults, activeMenu, query, sourceGroups, hiddenGroups, fuzzy) {
   var active = item(items, activeMenu) ? activeMenu : "root"
   var trimmed = String(query || "").trim()
   var order = Array.isArray(itemOrder) ? itemOrder : []
@@ -561,12 +656,14 @@ function buildRows(items, itemOrder, whenResults, checkedResults, activeMenu, qu
     if (!entry || entry.id === "root") continue
     // A Sources-page toggle surfacing in a root search would let "files" +
     // Enter switch the Files source off; toggles only list on their own page.
-    if (entry.kind === "source-toggle" && active !== "sources") continue
+    // Config rows (Sources and Settings pages) only list on their own page,
+    // so a root search for "files" or "wide" cannot flip a setting.
+    if (isConfigRow(entry) && entry.parent !== active) continue
     if (!isDescendantOf(items, entry.id, active)) continue
-    if (!matchesQuery(entry, trimmed, isVisible(items, itemOrder, whenResults, entry))) continue
+    if (!matchesQuery(entry, trimmed, isVisible(items, itemOrder, whenResults, entry), fuzzy)) continue
 
     var detail = parentPathFor(items, entry.id)
-    var row = displayRow(items, itemOrder, checkedResults, entry, detail, searchScore(items, entry, trimmed))
+    var row = displayRow(items, itemOrder, checkedResults, entry, detail, searchScore(items, entry, trimmed, fuzzy))
     if (entry.parent === active) currentRows.push(row)
     else drilldownRows.push(row)
   }
@@ -576,29 +673,69 @@ function buildRows(items, itemOrder, whenResults, checkedResults, activeMenu, qu
     return a.path.localeCompare(b.path)
   }
 
-  currentRows.sort(searchSort)
-  drilldownRows.sort(searchSort)
-  divider = currentRows.length > 0 && drilldownRows.length > 0
-  if (divider) {
-    for (var d = 0; d < drilldownRows.length; d++) drilldownRows[d].section = "drilldown"
+  var labels = ({})
+  if (active !== "root") {
+    currentRows.sort(searchSort)
+    drilldownRows.sort(searchSort)
+    divider = currentRows.length > 0 && drilldownRows.length > 0
+    if (divider) {
+      for (var d = 0; d < drilldownRows.length; d++) drilldownRows[d].section = "drilldown"
+    }
+    rows = currentRows.concat(drilldownRows)
+    return { activeMenu: active, rows: rows, searchDivider: divider, sectionLabels: labels }
   }
 
-  rows = currentRows.concat(drilldownRows)
-  var labels = ({})
-  if (active === "root") {
-    var groups = Array.isArray(sourceGroups) ? sourceGroups : []
-    for (var g = 0; g < groups.length; g++) {
-      var group = groups[g]
-      if (!group || !Array.isArray(group.rows) || group.rows.length === 0) continue
-      var section = "source:" + group.sourceId
-      var cap = group.maxRows > 0 ? group.maxRows : group.rows.length
-      for (var s = 0; s < group.rows.length && s < cap; s++) {
-        var sourced = group.rows[s]
-        sourced.section = section
-        rows.push(sourced)
-      }
-      labels[section] = group.groupLabel
+  // The root search feeds the category column. Source groups come as
+  // { sourceId, groupLabel, maxRows, rows, leading, exclusive }.
+  var groups = Array.isArray(sourceGroups) ? sourceGroups : []
+  var appendSource = function(group) {
+    if (!group || !Array.isArray(group.rows) || group.rows.length === 0) return
+    var section = "source:" + group.sourceId
+    var cap = group.maxRows > 0 ? group.maxRows : group.rows.length
+    for (var s = 0; s < group.rows.length && s < cap; s++) {
+      group.rows[s].section = section
+      rows.push(group.rows[s])
     }
+    labels[section] = group.groupLabel
   }
+
+  // A source that claimed the query by its prefix ("kill ", "cb ", ">") owns
+  // the whole list.
+  var claimed = false
+  for (var x = 0; x < groups.length; x++) {
+    if (groups[x] && groups[x].exclusive) { claimed = true; appendSource(groups[x]) }
+  }
+  if (claimed) return { activeMenu: active, rows: rows, searchDivider: false, sectionLabels: labels }
+
+  for (var lg = 0; lg < groups.length; lg++) if (groups[lg] && groups[lg].leading) appendSource(groups[lg])
+
+  // Menu-tree rows split into Omarchy, Applications and Session (the System
+  // submenu); the group holding the best match leads.
+  var hidden = hiddenGroups || ({})
+  var treeGroups = [{ key: "menu", section: "group:menu", label: "Omarchy", rows: [] },
+                    { key: "apps", section: "group:apps", label: "Applications", rows: [] },
+                    { key: "session", section: "group:session", label: "Session", rows: [] }]
+  var matched = currentRows.concat(drilldownRows)
+  for (var m = 0; m < matched.length; m++) {
+    var slot = matched[m].kind === "app" ? 1 : String(matched[m].itemId).indexOf("system.") === 0 ? 2 : 0
+    if (!hidden[treeGroups[slot].key]) treeGroups[slot].rows.push(matched[m])
+  }
+  var filled = []
+  for (var tg = 0; tg < treeGroups.length; tg++) {
+    if (treeGroups[tg].rows.length === 0) continue
+    treeGroups[tg].rows.sort(searchSort)
+    treeGroups[tg].rank = tg
+    filled.push(treeGroups[tg])
+  }
+  filled.sort(function(a, b) { return (a.rows[0].score - b.rows[0].score) || (a.rank - b.rank) })
+  for (var f = 0; f < filled.length; f++) {
+    for (var tr = 0; tr < filled[f].rows.length; tr++) {
+      filled[f].rows[tr].section = filled[f].section
+      rows.push(filled[f].rows[tr])
+    }
+    labels[filled[f].section] = filled[f].label
+  }
+
+  for (var tgx = 0; tgx < groups.length; tgx++) if (groups[tgx] && !groups[tgx].leading) appendSource(groups[tgx])
   return { activeMenu: active, rows: rows, searchDivider: divider, sectionLabels: labels }
 }

@@ -54,9 +54,9 @@ test("runner registers the files source and its config", () => {
   assert.match(qml, /interval: 120/)
 })
 
-test("section delegate renders source captions", () => {
-  assert.match(qml, /indexOf\("source:"\) === 0/)
+test("the category column captions the first row of each section", () => {
   assert.match(qml, /root\.sectionLabels\[/)
+  assert.ok(qml.includes("row.ListView.previousSection !== row.ListView.section"))
 })
 
 test("source rows activate through their source with modifiers", () => {
@@ -127,5 +127,130 @@ test("the guard script excludes source-toggle rows from bash evaluation", () => 
   // checked: "config" on a toggle row is a marker for refreshSourcePage(),
   // not a shell expression; handing it to guardScript would run "config" as
   // a command and clobber the toggle's checkmark with whatever that exits.
-  assert.match(qml, /gentry\.kind !== "source-toggle"/)
+  assert.ok(qml.includes("!RunnerModel.isConfigRow(gentry)"))
+})
+
+// -- KRunner/COSMIC layout (spec 2026-09-24-omarunner-krunner-layout-design).
+
+test("the card width is fixed on every route", () => {
+  assert.match(qml, /property int cardWidth: Math\.min\(Style\.space\(root\.settings\.width\)/)
+  assert.equal(qml.includes("Style.space(300)"), false)
+})
+
+test("rows are compact and the list caps at nine before folding", () => {
+  assert.match(qml, /property int compactRowHeight:/)
+  assert.match(qml, /property int maxVisibleRows: root\.settings\.rows/)
+  assert.equal(qml.includes("detailRowHeight"), false)
+})
+
+test("the category column only exists for a root search", () => {
+  assert.match(qml, /readonly property bool showCategories: root\.activeMenu === "root" && !root\.collapsed/)
+  assert.match(qml, /property int categoryWidth:/)
+})
+
+test("Ctrl+1 through Ctrl+9 activate the matching row with modifiers", () => {
+  assert.match(qml, /function quickLaunchIndex\(event\)/)
+  assert.ok(qml.includes("if (event.key >= Qt.Key_1 && event.key <= Qt.Key_9) return event.key - Qt.Key_1"))
+  assert.ok(qml.includes("Qt.Key_Exclam"), "Ctrl+Shift+1 arrives as Key_Exclam")
+  assert.ok(qml.includes("root.activateIndex(quick, false, event.modifiers)"))
+})
+
+test("rows 1 to 9 show their Ctrl shortcut", () => {
+  assert.ok(qml.includes('root.settings.hints && row.index < 9 ? "Ctrl+" + (row.index + 1) : ""'))
+})
+
+test("the filter button and Ctrl+comma open the Sources page", () => {
+  assert.match(qml, /function openSourcesPage\(\)/)
+  assert.ok(qml.includes("event.key === Qt.Key_Comma"))
+  assert.match(qml, /id: filterButton[\s\S]*?onClicked: root\.openSourcesPage\(\)/)
+})
+
+test("text is scaled locally, never through the shell's font tokens", () => {
+  assert.match(qml, /property real fontScale: root\.settings\.fontScale \/ 100/)
+  const direct = qml.match(/Style\.font\.(body|bodySmall|caption|title|heading|displayLarge)\b/g) || []
+  assert.deepEqual(direct.sort(), ["Style.font.body", "Style.font.bodySmall", "Style.font.caption",
+    "Style.font.displayLarge", "Style.font.heading", "Style.font.title"])
+})
+
+test("the Sources page lists Applications and Omarchy ahead of the sources", () => {
+  assert.ok(qml.includes('{ sourceId: "apps", groupLabel: "Applications" }'))
+  assert.ok(qml.includes('{ sourceId: "menu", groupLabel: "Omarchy" }'))
+  assert.match(qml, /root\.sourceGroups\(\), root\.hiddenGroups\(\), root\.settings\.fuzzy\)/)
+})
+
+// -- More sources.
+
+const SOURCE_FILES = ["CalcSource.qml", "LocationSource.qml", "CommandSource.qml", "KillSource.qml",
+  "ClipboardSource.qml", "RecentSource.qml", "FileSource.qml"]
+
+test("every source file implements the source interface", async () => {
+  for (const file of SOURCE_FILES) {
+    const src = await readFile(join(root, file), "utf8")
+    for (const needle of ["property string sourceId", "property string groupLabel", "property int maxRows",
+      "property bool enabled", "function search(", "function activate(", "signal results("]) {
+      assert.ok(src.includes(needle), `${file} missing ${needle}`)
+    }
+  }
+})
+
+test("sources built from user text run argv, never a shell string", async () => {
+  for (const file of ["CalcSource.qml", "CommandSource.qml", "KillSource.qml", "ClipboardSource.qml"]) {
+    const src = await readFile(join(root, file), "utf8")
+    assert.ok(src.includes("Util.execArgv("), `${file} should use Util.execArgv`)
+    assert.equal(src.includes("Util.execDetached("), false, `${file} should not use Util.execDetached`)
+  }
+})
+
+test("prefix sources claim their queries; leading sources lead", async () => {
+  for (const file of ["CommandSource.qml", "KillSource.qml", "ClipboardSource.qml"]) {
+    assert.ok((await readFile(join(root, file), "utf8")).includes("function claims("), file)
+  }
+  for (const file of ["CalcSource.qml", "LocationSource.qml"]) {
+    assert.ok((await readFile(join(root, file), "utf8")).includes("property bool leading: true"), file)
+  }
+})
+
+test("the runner registers every source and gives claimed queries to their source alone", () => {
+  assert.ok(qml.includes("property var sources: [calcSource, locationSource, commandSource, killSource, clipboardSource, fileSource, recentSource]"))
+  for (const type of ["CalcSource", "LocationSource", "CommandSource", "KillSource", "ClipboardSource", "RecentSource"]) {
+    assert.match(qml, new RegExp(type + "\\s*\\{"))
+  }
+  assert.match(qml, /function sourceClaims\(source, query\)/)
+  assert.ok(qml.includes("exclusive: root.sourceClaims(s, root.filterText.trim())"))
+  assert.ok(qml.includes("RunnerModel.withSessionAliases(mergedMenu.items)"))
+  assert.ok(qml.includes('{ sourceId: "session", groupLabel: "Session" }'))
+})
+
+// -- Settings page and fuzzy matching.
+
+test("the gear button and Ctrl+S open the Settings page", () => {
+  assert.match(qml, /function openSettingsPage\(\)/)
+  assert.ok(qml.includes("event.key === Qt.Key_S"))
+  assert.match(qml, /id: gearButton[\s\S]*?onClicked: root\.openSettingsPage\(\)/)
+})
+
+test("layout values come from the resolved settings", () => {
+  assert.ok(qml.includes("readonly property var settings: SettingsModel.resolve(sourceConfig.config)"))
+  assert.ok(qml.includes('Border.surfaceSpec("menu", "border", border, root.settings.border)'))
+  assert.ok(qml.includes("Style.space(root.settings.density)"))
+  assert.ok(qml.includes("root.settings.categories"))
+})
+
+test("the Settings page is injected and its rows write the config", () => {
+  assert.ok(qml.includes("SettingsModel.pageRows(SettingsModel.resolve(sourceConfig.config))"))
+  assert.ok(qml.includes("sourceConfig.apply(SettingsModel.applyOption(sourceConfig.config, row.value))"))
+  assert.ok(qml.includes("sourceConfig.apply(SettingsModel.toggled(sourceConfig.config, row.value))"))
+})
+
+test("fuzzy reaches the files and recent sources", async () => {
+  assert.match(qml, /FileSource \{\s*id: fileSource\s*fuzzy: root\.settings\.fuzzy/)
+  assert.match(qml, /RecentSource \{\s*id: recentSource\s*fuzzy: root\.settings\.fuzzy/)
+  const files = await readFile(join(root, "FileSource.qml"), "utf8")
+  assert.ok(files.includes("FileModel.fzfArgs(query, root.home)"))
+  assert.ok(files.includes('command: ["sh", "-c", "command -v fzf"]'))
+})
+
+test("text follows the chosen font while glyphs stay on the menu font", () => {
+  assert.ok(qml.includes("readonly property string textFamily: root.settings.fontFamily || root.fontFamily"))
+  assert.ok((qml.match(/font\.family: root\.textFamily/g) || []).length >= 6)
 })

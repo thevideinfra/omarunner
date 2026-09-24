@@ -15,6 +15,19 @@ function fdArgs(query, home) {
   return args.concat(["--max-results", "40", pattern, String(home || "")])
 }
 
+// Fuzzy mode: fd lists every file, fzf ranks them (path scheme favours the
+// basename). The query and the fd argv travel as positional arguments, so
+// nothing the user types is parsed by the shell.
+function fzfArgs(query, home) {
+  var trimmed = String(query || "").trim()
+  if (trimmed.length < 2) return []
+  var fd = ["fd", "--type", "f", "--color", "never"]
+  var excludes = EXCLUDES()
+  for (var i = 0; i < excludes.length; i++) fd.push("--exclude", excludes[i])
+  fd.push(".", String(home || ""))
+  return ["sh", "-c", "q=$1; shift; \"$@\" | fzf --filter \"$q\" --scheme=path | head -n 40", "sh", trimmed].concat(fd)
+}
+
 // Dot-directories are already skipped (no --hidden); these are the bulky
 // non-hidden or explicitly-named trees that still drown real documents.
 function EXCLUDES() {
@@ -62,7 +75,8 @@ function fileRow(path, home) {
 // fd walks in parallel, so its output order changes run to run. Rank before
 // the group cap: basename starts with the first query term, then paths with
 // no hidden segment, then shallower paths, then alphabetical.
-function fileRows(stdoutText, home, query) {
+// keepOrder: the lines are already ranked (fzf), so skip the sort.
+function fileRows(stdoutText, home, query, keepOrder) {
   var lines = String(stdoutText || "").split("\n")
   var first = String(query || "").trim().split(/\s+/)[0].toLowerCase()
   var ranked = []
@@ -79,7 +93,7 @@ function fileRows(stdoutText, home, query) {
       path: row.value
     })
   }
-  ranked.sort(function(a, b) {
+  if (!keepOrder) ranked.sort(function(a, b) {
     if (a.prefix !== b.prefix) return a.prefix - b.prefix
     if (a.hidden !== b.hidden) return a.hidden - b.hidden
     if (a.depth !== b.depth) return a.depth - b.depth
@@ -101,6 +115,7 @@ function revealCommand(path) {
 if (typeof module !== "undefined") {
   module.exports = {
     fdArgs: fdArgs,
+    fzfArgs: fzfArgs,
     fileRow: fileRow,
     fileRows: fileRows,
     openCommand: openCommand,

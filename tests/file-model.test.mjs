@@ -98,3 +98,19 @@ test("command builders reject empty paths", () => {
   assert.equal(F.openCommand(""), "")
   assert.equal(F.revealCommand(""), "")
 })
+
+test("fzfArgs passes the query and fd argv positionally", () => {
+  const argv = F.fzfArgs("bind lua", HOME)
+  assert.equal(argv[0], "sh")
+  assert.ok(argv[2].includes('fzf --filter "$q" --scheme=path'))
+  assert.equal(argv[4], "bind lua")
+  assert.deepEqual(argv.slice(5, 10), ["fd", "--type", "f", "--color", "never"])
+  assert.deepEqual(argv.slice(-2), [".", HOME])
+  assert.deepEqual(F.fzfArgs("a", HOME), [])
+})
+
+test("fileRows keeps fzf's order when asked", () => {
+  const out = `${HOME}/deep/a/b/zeta.txt\n${HOME}/alpha.txt\n`
+  assert.deepEqual(F.fileRows(out, HOME, "a", true).map(r => r.label), ["zeta.txt", "alpha.txt"])
+  assert.deepEqual(F.fileRows(out, HOME, "a", false).map(r => r.label), ["alpha.txt", "zeta.txt"])
+})
