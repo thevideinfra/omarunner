@@ -387,3 +387,9 @@ test("a fallback group shows only when nothing else matched", () => {
   const afterFiles = RunnerModel.buildRows(items, itemOrder, {}, {}, "root", "zzqx", [files, web])
   assert.deepEqual(afterFiles.rows.map(x => x.label), ["zzqx.txt"])
 })
+
+test("fuzzy gaps are measured from the matched word", () => {
+  assert.equal(RunnerModel.fuzzyWordGaps("edt", "text editor"), 1)
+  assert.equal(RunnerModel.fuzzyWordGaps("lib", "clipboard"), -1)
+  assert.equal(RunnerModel.fuzzyWordStart("edt", "text editor"), true)
+})

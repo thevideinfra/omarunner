@@ -114,3 +114,7 @@ test("fileRows keeps fzf's order when asked", () => {
   assert.deepEqual(F.fileRows(out, HOME, "a", true).map(r => r.label), ["zeta.txt", "alpha.txt"])
   assert.deepEqual(F.fileRows(out, HOME, "a", false).map(r => r.label), ["alpha.txt", "zeta.txt"])
 })
+
+test("image thumbnails escape # and ?", () => {
+  assert.equal(F.fileRow("/home/ks/p #2?.png", HOME).appIcon, "file:///home/ks/p%20%232%3F.png")
+})

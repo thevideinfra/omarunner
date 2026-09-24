@@ -81,7 +81,7 @@ function row(match) {
   var entry = match.entry
   if (isImage(entry)) {
     var image = baseRow(match.index, "image-x-generic", "Image", String(entry.capturedAt || ""), "image:" + entry.path)
-    image.appIcon = "file://" + encodeURI(entry.path)
+    image.appIcon = "file://" + encodeURI(entry.path).replace(/#/g, "%23").replace(/\?/g, "%3F")
     return image
   }
   var lineCount = String(entry.text).split("\n").length

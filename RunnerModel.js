@@ -339,17 +339,22 @@ function fuzzyNeedle(query) {
 // Touchpad Haptics) and keep the letters close: no more skipped letters than
 // typed ones. Without both, long labels like "Clipboard" match almost any
 // three letters.
-function fuzzyWordStart(needle, text) {
+// The tightest skipped-letter count over every word start that matches, or
+// -1 when none does within the spread limit.
+function fuzzyWordGaps(needle, text) {
   var n = String(needle || "")
   var t = String(text || "")
-  if (!n) return false
+  if (!n) return -1
+  var best = -1
   for (var start = t.indexOf(n.charAt(0)); start >= 0; start = t.indexOf(n.charAt(0), start + 1)) {
     if (start > 0 && /[a-z0-9]/.test(t.charAt(start - 1))) continue
     var gaps = fuzzyGaps(n, t.slice(start))
-    if (gaps >= 0 && gaps <= n.length) return true
+    if (gaps >= 0 && gaps <= n.length && (best < 0 || gaps < best)) best = gaps
   }
-  return false
+  return best
 }
+
+function fuzzyWordStart(needle, text) { return fuzzyWordGaps(needle, text) >= 0 }
 
 function fuzzyMatches(entry, query) {
   var needle = fuzzyNeedle(query)
@@ -401,7 +406,7 @@ function searchScore(items, entry, query, fuzzy) {
   else if (descriptionTextMatches(needle, descriptionText)) score = 60
   // A fuzzy-only hit ranks below everything else, tighter hits first.
   else if (fuzzy === true && !matchesQuery(entry, query, true, false) && fuzzyMatches(entry, query))
-    score = 85 + Math.min(9, fuzzyGaps(fuzzyNeedle(query), label))
+    score = 85 + Math.min(9, fuzzyWordGaps(fuzzyNeedle(query), label))
 
   if (entry.kind === "menu" || entry.kind === "link") score -= 2
   // App rows sort after all menu items, so they lose the tiebreak below to an
@@ -546,6 +551,7 @@ if (typeof module !== "undefined") {
     withSessionAliases: withSessionAliases,
     fuzzyGaps: fuzzyGaps,
     fuzzyWordStart: fuzzyWordStart,
+    fuzzyWordGaps: fuzzyWordGaps,
     isConfigRow: isConfigRow,
     stripJsonc: stripJsonc,
     normalizeAliases: normalizeAliases,
