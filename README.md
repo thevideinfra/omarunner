@@ -6,8 +6,6 @@ keystroke expands it into results drawn from the whole Omarchy menu tree, the
 installed applications, and files in your home directory. It is a fork of the first-party `omarchy.menu` plugin, so
 it follows the active Omarchy theme with no configuration.
 
-Current state, known gaps and next steps: `docs/STATUS.md`.
-
 ## Installation
 
 ```bash
@@ -67,7 +65,7 @@ omarchy-restart-shell
 
 `bin/omarunner-diff-upstream` compares the installed first-party menu plugin
 against the vendored baseline in `upstream/`, which is how drift after an Omarchy
-update becomes visible. See `docs/UPSTREAM.md`.
+update becomes visible.
 
 ## Applications
 
