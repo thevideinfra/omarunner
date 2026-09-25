@@ -393,3 +393,16 @@ test("fuzzy gaps are measured from the matched word", () => {
   assert.equal(RunnerModel.fuzzyWordGaps("lib", "clipboard"), -1)
   assert.equal(RunnerModel.fuzzyWordStart("edt", "text editor"), true)
 })
+
+test("Settings and Sources sub-entries stay off the root search", () => {
+  const { items, itemOrder } = fixture()
+  items["settings"] = { id: "settings", parent: "root", kind: "menu", label: "Settings", aliases: [], order: 90 }
+  items["settings.fontFamily"] = { id: "settings.fontFamily", parent: "settings", kind: "menu", label: "Font · Omarchy default", aliases: [], order: 91 }
+  items["settings.fontFamily.1"] = { id: "settings.fontFamily.1", parent: "settings.fontFamily", kind: "setting-option", label: "Sans",
+    aliases: [], checked: "config", value: "fontFamily=sans-serif", order: 92 }
+  const order = itemOrder.concat(["settings", "settings.fontFamily", "settings.fontFamily.1"])
+  const labels = q => RunnerModel.buildRows(items, order, {}, {}, "root", q).rows.map(x => x.label)
+  assert.deepEqual(labels("font"), ["Font"])
+  assert.deepEqual(labels("settings"), ["Settings"])
+  assert.deepEqual(RunnerModel.buildRows(items, order, {}, {}, "settings", "font").rows.map(x => x.label), ["Font · Omarchy default"])
+})
