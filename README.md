@@ -10,7 +10,22 @@ and more. The first nine results launch with `Ctrl+1` to `Ctrl+9`.
 It is a fork of the first-party `omarchy.menu` plugin, so it follows the active
 Omarchy theme with no configuration.
 
+## Requirements
+
+- Omarchy 4 with its Lua Hyprland config (`~/.config/hypr/bindings.lua`) and the
+  Omarchy shell (Quickshell). Verified on Omarchy 4.0.4-1 with Hyprland 0.56.
+- Older Omarchy releases that configure Hyprland through `hyprland.conf` are not
+  supported: the keybinding steps below do not apply there, and focusing a
+  window from the Windows results uses Hyprland's Lua dispatcher.
+
 ## Installation
+
+```bash
+git clone https://github.com/thevideinfra/omarunner.git ~/.local/share/omarunner
+cd ~/.local/share/omarunner
+```
+
+Then:
 
 ```bash
 ./install.sh
@@ -30,6 +45,17 @@ Optional packages, which `install.sh` checks for and names if missing:
 
 ```bash
 sudo pacman -S libqalculate fzf
+```
+
+## Updating
+
+The plugin is a symlink to your checkout, so updating is a pull and a shell
+restart:
+
+```bash
+cd ~/.local/share/omarunner
+git pull
+omarchy-restart-shell
 ```
 
 ## Keybindings
@@ -170,6 +196,13 @@ The first-party `omarchy.menu` plugin stays installed and untouched. It still
 serves the Omarchy logo button in the bar, the `SUPER + CTRL + SPACE` background
 switcher, and the `omarchy-menu-select` / `omarchy-menu-input` dmenu helpers,
 which omarunner deliberately does not implement.
+
+## Credits
+
+omarunner is a fork of the `omarchy.menu` plugin from
+[Omarchy](https://github.com/omacom/omarchy), MIT licensed, copyright David
+Heinemeier Hansson; see `LICENSE`. The launcher design borrows from KDE's
+KRunner and the COSMIC launcher.
 
 ## Verified on
 
