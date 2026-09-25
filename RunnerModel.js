@@ -325,6 +325,15 @@ function fuzzyGaps(needle, text) {
 }
 
 // The query with spaces removed, when long enough to match fuzzily.
+function isInsidePage(id, active) {
+  var pages = ["settings", "sources"]
+  for (var i = 0; i < pages.length; i++) {
+    var prefix = pages[i] + "."
+    if (String(id).indexOf(prefix) === 0) return active === pages[i] || String(active).indexOf(prefix) === 0
+  }
+  return true
+}
+
 function isConfigRow(entry) {
   return !!entry && (entry.kind === "source-toggle" || entry.kind === "setting-option" || entry.kind === "setting-toggle" ||
     entry.kind === "setting-custom")
@@ -666,6 +675,10 @@ function buildRows(items, itemOrder, whenResults, checkedResults, activeMenu, qu
     // Config rows (Sources and Settings pages) only list on their own page,
     // so a root search for "files" or "wide" cannot flip a setting.
     if (isConfigRow(entry) && entry.parent !== active) continue
+    // The Settings and Sources pages' own entries ("Font · Omarchy default")
+    // only list while that page is open; the page items themselves stay
+    // searchable.
+    if (!isInsidePage(entry.id, active)) continue
     if (!isDescendantOf(items, entry.id, active)) continue
     if (!matchesQuery(entry, trimmed, isVisible(items, itemOrder, whenResults, entry), fuzzy)) continue
 

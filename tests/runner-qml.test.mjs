@@ -302,3 +302,9 @@ test("opacity and corner radius come from the settings", () => {
 test("the prefix-only guard spares fallback sources like Web", () => {
   assert.ok(qml.includes('var prefixOnly = typeof s.claims === "function" && s.fallback !== true'))
 })
+
+test("group dividers live in the row, not in ListView section delegates", () => {
+  assert.equal(qml.includes("section.delegate"), false)
+  assert.ok(qml.includes("height: root.baseRowHeight + row.gapAbove"))
+  assert.ok(qml.includes('elide: row.kind === "source-toggle" ? Text.ElideRight : Text.ElideMiddle'))
+})

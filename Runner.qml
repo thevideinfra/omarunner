@@ -130,8 +130,6 @@ Item {
   property var sourceRows: ({})
   property int searchSerial: 0
   property var sectionLabels: ({})
-  // Section of the first row: no divider is drawn above it.
-  property string firstSection: ""
   // At the root with no query omarunner is a bare input line: no row area, and
   // no spacing under the header to hint at one.
   readonly property bool collapsed: root.activeMenu === "root" && !root.filterText.trim()
@@ -463,7 +461,6 @@ Item {
     root.activeMenu = built.activeMenu
     root.searchDivider = built.searchDivider
     root.sectionLabels = built.sectionLabels || ({})
-    root.firstSection = built.rows.length > 0 ? String(built.rows[0].section || "") : ""
 
     // On a setting's page, a typed value becomes a "Use …" row at the top.
     var typed = SettingsModel.customDisplayRow(root.activeMenu, root.filterText)
@@ -1315,28 +1312,6 @@ Item {
 
             section.property: "section"
             section.criteria: ViewSection.FullString
-            section.delegate: Item {
-              required property string section
-
-              // Captions live in the row's category column; this only draws
-              // the hairline between groups, never above the first one.
-              readonly property bool drawn: section !== root.firstSection && root.sectionGapHeight(section) > 0
-
-              width: ListView.view.width
-              height: drawn ? root.sectionGapHeight(section) : 0
-              visible: drawn
-
-              Rectangle {
-                anchors.left: parent.left
-                anchors.leftMargin: Style.space(4)
-                anchors.right: parent.right
-                anchors.rightMargin: Style.space(4)
-                anchors.verticalCenter: parent.verticalCenter
-                height: Style.spacing.hairline
-                color: Util.alpha(root.foreground, 0.2)
-              }
-            }
-
             delegate: Item {
               id: row
               required property int index
@@ -1361,10 +1336,24 @@ Item {
               readonly property bool usesImage: row.isApp || row.kind === "source"
               readonly property bool hasIcon: row.icon.length > 0 || row.usesImage
               readonly property int iconSize: Math.round(root.baseRowHeight * 0.6)
+              // Group dividers are drawn inside the first row of each group,
+              // never above the first row. (ListView section delegates left
+              // stray lines behind when the model was rebuilt.)
+              readonly property int gapAbove: row.index > 0 && row.ListView.previousSection !== row.section
+                ? root.sectionGapHeight(row.section) : 0
               readonly property color textColor: row.hasCursor ? root.selectedText : root.foreground
 
               width: ListView.view.width
-              height: root.baseRowHeight
+              height: root.baseRowHeight + row.gapAbove
+
+              Rectangle {
+                visible: row.gapAbove > 0
+                x: Style.space(4)
+                width: parent.width - Style.space(8)
+                y: Math.round(row.gapAbove / 2)
+                height: Style.spacing.hairline
+                color: Util.alpha(root.foreground, 0.2)
+              }
 
               // KRunner category column: the group caption, on the first row
               // of each section only.
@@ -1375,7 +1364,7 @@ Item {
                 text: root.sectionLabels[row.section] || ""
                 width: Math.max(0, root.categoryWidth - Style.space(12))
                 anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
+                anchors.verticalCenter: rowSurface.verticalCenter
                 horizontalAlignment: Text.AlignRight
                 color: root.foreground
                 opacity: 0.6
@@ -1389,7 +1378,8 @@ Item {
                 anchors.left: parent.left
                 anchors.leftMargin: root.categoryWidth
                 anchors.right: parent.right
-                height: parent.height
+                anchors.bottom: parent.bottom
+                height: root.baseRowHeight
                 radius: root.cornerRadius
                 color: row.hasCursor ? root.selectedBackground : "transparent"
                 borderSpec: row.hasCursor ? root.selectedBorderSpec : Border.none()
@@ -1478,7 +1468,8 @@ Item {
                     opacity: 0.52
                     font.family: root.textFamily
                     font.pixelSize: root.fontHint
-                    elide: Text.ElideMiddle
+                    // Paths lose their middle; Sources hints read left to right.
+                    elide: row.kind === "source-toggle" ? Text.ElideRight : Text.ElideMiddle
                   }
                 }
 

@@ -10,6 +10,17 @@ and more. The first nine results launch with `Ctrl+1` to `Ctrl+9`.
 It is a fork of the first-party `omarchy.menu` plugin, so it follows the active
 Omarchy theme with no configuration.
 
+## Screenshots
+
+![Search results grouped by kind, with Ctrl+number hints](assets/omarunneromarchy.png)
+
+| | |
+|---|---|
+| ![Collapsed: one input line](assets/omarunner.png) | ![Clipboard history behind the cb prefix](assets/omarunnercb.png) |
+| ![Menu and file results](assets/omarunnertest.png) | ![Web search with dd and gg](assets/omarunnerddgg.png) |
+| ![Sources page with hints](assets/omarunnerfilter.png) | ![Settings page](assets/omarunnersettings.png) |
+| ![Apps submenu](assets/omarunnerapps.png) | |
+
 ## Requirements
 
 - Omarchy 4 with its Lua Hyprland config (`~/.config/hypr/bindings.lua`) and the
