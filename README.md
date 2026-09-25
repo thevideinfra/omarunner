@@ -20,23 +20,16 @@ Omarchy theme with no configuration.
 
 ## Installation
 
-```bash
-git clone https://github.com/thevideinfra/omarunner.git ~/.local/share/omarunner
-cd ~/.local/share/omarunner
-```
-
-Then:
+omarunner is a standard Omarchy shell plugin:
 
 ```bash
-./install.sh
-omarchy-restart-shell
+omarchy plugin add https://github.com/thevideinfra/omarunner.git --enable
 ```
 
-`install.sh` symlinks this checkout into `~/.config/omarchy/plugins/videinfra.omarunner`,
-enables the plugin in `~/.config/omarchy/shell.json` (backing the file up first),
-and symlinks the `omarunner` CLI into `~/.local/bin`.
+This clones the plugin into `~/.config/omarchy/plugins/videinfra.omarunner`,
+validates it and enables it. Then bind it to a key (below).
 
-Optional packages, which `install.sh` checks for and names if missing:
+Optional packages:
 
 - `libqalculate` (provides `qalc`): unit, currency and function support in the
   calculator. Plain arithmetic works without it.
@@ -49,13 +42,8 @@ sudo pacman -S libqalculate fzf
 
 ## Updating
 
-The plugin is a symlink to your checkout, so updating is a pull and a shell
-restart:
-
 ```bash
-cd ~/.local/share/omarunner
-git pull
-omarchy-restart-shell
+omarchy plugin update videinfra.omarunner
 ```
 
 ## Keybindings
@@ -66,13 +54,16 @@ Add these to `~/.config/hypr/bindings.lua`, then run `hyprctl reload`:
 -- omarunner replaces the Omarchy root menu on SUPER+SPACE (was: Omarchy menu).
 -- The bar's Omarchy logo button and SUPER+CTRL+SPACE (background switcher)
 -- stay on omarchy-menu.
+local omarunner = "$HOME/.config/omarchy/plugins/videinfra.omarunner/bin/omarunner"
 hl.unbind("SUPER + SPACE")
-o.bind("SUPER + SPACE", "omarunner", "omarunner toggle")
+o.bind("SUPER + SPACE", "omarunner", omarunner .. " toggle")
 hl.unbind("SUPER + ALT + SPACE")
-o.bind("SUPER + ALT + SPACE", "omarunner apps", "omarunner toggle apps")
+o.bind("SUPER + ALT + SPACE", "omarunner apps", omarunner .. " toggle apps")
 ```
 
 ## Usage
+
+`bin/omarunner` drives the plugin from a terminal or a keybinding:
 
 ```
 omarunner [toggle|summon|close|refresh|ping] [route]
@@ -82,19 +73,36 @@ omarunner [toggle|summon|close|refresh|ping] [route]
 id (`setup.power`) or an alias (`power`), the same routes `omarchy-menu` accepts,
 plus `sources` and `settings` for omarunner's own pages.
 
+To have `omarunner` on your PATH:
+
+```bash
+ln -s ~/.config/omarchy/plugins/videinfra.omarunner/bin/omarunner ~/.local/bin/omarunner
+```
+
 ## Uninstallation
 
 ```bash
-./uninstall.sh
-omarchy-restart-shell
+omarchy plugin remove videinfra.omarunner
 ```
 
-Then remove all four lines added above (the two `hl.unbind` lines and the two
-`o.bind` lines) from `~/.config/hypr/bindings.lua` and run `hyprctl reload`.
-Leaving the `hl.unbind` lines in place suppresses the Omarchy defaults for
-`SUPER + SPACE` and `SUPER + ALT + SPACE` without restoring anything.
+Then remove the lines added to `~/.config/hypr/bindings.lua` above (the `local`
+line, the two `hl.unbind` lines and the two `o.bind` lines) and run
+`hyprctl reload`. Leaving the `hl.unbind` lines in place suppresses the Omarchy
+defaults for `SUPER + SPACE` and `SUPER + ALT + SPACE` without restoring
+anything. Remove the `~/.local/bin/omarunner` link too if you made one.
 
 ## Development
+
+For working on omarunner, link a checkout instead of installing a copy:
+
+```bash
+git clone https://github.com/thevideinfra/omarunner.git ~/Projects/omarunner
+cd ~/Projects/omarunner
+./install.sh          # symlinks the checkout as the plugin, enables it,
+omarchy-restart-shell # links the CLI, and names missing optional packages
+```
+
+`./uninstall.sh` undoes it.
 
 Run the unit tests with `npm test`. They cover the pure logic of every source
 (`*Model.js`), row building and grouping in `RunnerModel.js`, the settings model,
