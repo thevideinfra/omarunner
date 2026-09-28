@@ -194,11 +194,11 @@ Shift+click works like Shift+Enter.
 
 ## Sources and settings
 
-The **Sources** page lists every search source with a short hint and a ✓ when
+The **Omarunner Sources** page (filter button, `Ctrl+,`) lists every search source with a short hint and a ✓ when
 enabled; Enter toggles one. Applications, Omarchy and Session can be switched
 off the same way.
 
-The **Settings** page holds: border, category column, corner radius,
+The **Omarunner Settings** page (gear, `Ctrl+S`) holds: border, category column, corner radius,
 Ctrl+number hints, font, fuzzy matching, hint size, opacity, row height, rows
 before scrolling, text size and width. Each choice offers presets and a
 **Custom…** entry: open the setting and type a value (a number in the range the
