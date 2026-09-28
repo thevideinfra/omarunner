@@ -26,6 +26,10 @@ function CHOICES() {
 
 // Custom values a user may type on a setting's page: whole numbers in range.
 // fontFamily takes any font name instead.
+// The Settings page's menu id. Not "settings": Omarchy's Setup menu answers to
+// that alias, and an exact id would shadow it.
+function PAGE_ID() { return "omarunner-settings" }
+
 function RANGES() {
   return { width: [300, 1600], rows: [3, 20], density: [18, 48], fontScale: [50, 200], hintScale: [50, 200], border: [0, 10],
     opacity: [30, 100], radius: [0, 30] }
@@ -64,7 +68,12 @@ function resolve(config) {
   for (var i = 0; i < list.length; i++) {
     var key = list[i].key
     if (!(key in given)) continue
-    if (key === "fontFamily") { if (typeof given[key] === "string") out[key] = given[key]; continue }
+    if (key === "fontFamily") {
+      // Trimmed; blank or over-long names fall back to the theme default.
+      var family = typeof given[key] === "string" ? given[key].trim() : ""
+      out[key] = family.length <= 64 ? family : ""
+      continue
+    }
     if (inRange(key, given[key])) { out[key] = given[key]; continue }
     for (var c = 0; c < list[i].choices.length; c++) if (list[i].choices[c].value === given[key]) out[key] = given[key]
   }
@@ -96,28 +105,33 @@ function currentLabel(key, value) {
   return "Custom (" + value + ")"
 }
 
-// Typed input on a setting's page: { value, label } or null. A trailing "%"
-// or "px" is allowed; percent settings keep it in the label.
+// Typed input on a setting's page: { value, label } or null. A unit may follow
+// the number, but only the setting's own: "%" for percentages, "px" for sizes.
 function customChoice(key, text) {
   var raw = String(text || "").trim()
   if (key === "fontFamily") return raw && raw.length <= 64 ? { value: raw, label: raw } : null
   if (!RANGES()[key]) return null
   var match = /^(\d+)\s*(%|px)?$/i.exec(raw)
   if (!match) return null
+  var percent = key === "fontScale" || key === "hintScale" || key === "opacity"
+  var unit = String(match[2] || "").toLowerCase()
+  if (unit && unit !== (percent ? "%" : "px")) return null
+  if (unit === "px" && key === "rows") return null
   var value = Number(match[1])
   if (!inRange(key, value)) return null
-  var percent = key === "fontScale" || key === "hintScale" || key === "opacity"
   return { value: value, label: percent ? value + "%" : String(value) }
 }
 
-// While typing on "settings.<key>", the typed value as a pickable row, in the
+// While typing on "omarunner-settings.<key>", the typed value as a pickable row, in the
 // display-row shape buildRows produces.
 function customDisplayRow(activeMenu, text) {
   var menu = String(activeMenu || "")
-  if (menu.indexOf("settings.") !== 0) return null
-  var key = menu.slice(9)
+  var prefix = PAGE_ID() + "."
+  if (menu.indexOf(prefix) !== 0) return null
+  var key = menu.slice(prefix.length)
   var choice = customChoice(key, text)
-  if (!choice) return null
+  // A preset with that value is already listed; don't offer it twice.
+  if (!choice || isPreset(key, choice.value)) return null
   return { itemId: menu + ".typed", kind: "setting-option", icon: "", iconFont: "", appIcon: "", appId: "",
     label: "Use " + choice.label, target: "", detail: "", path: "", childCount: 0, action: "", provider: "",
     score: 0, section: "", sourceId: "", value: key + "=" + choice.value }
@@ -152,8 +166,8 @@ function pageRows(settingsIn) {
   var list = CHOICES()
   for (var i = 0; i < list.length; i++) {
     var key = list[i].key
-    var menuId = "settings." + key
-    var group = [menuRow(menuId, "settings", list[i].label + " · " + currentLabel(key, settings[key]), 0)]
+    var menuId = PAGE_ID() + "." + key
+    var group = [menuRow(menuId, PAGE_ID(), list[i].label + " · " + currentLabel(key, settings[key]), 0)]
     for (var c = 0; c < list[i].choices.length; c++) {
       var choice = list[i].choices[c]
       var id = menuId + "." + c
@@ -172,8 +186,8 @@ function pageRows(settingsIn) {
   }
   var toggles = TOGGLES()
   for (var t = 0; t < toggles.length; t++) {
-    var toggleId = "settings." + toggles[t].key
-    entries.push({ name: toggles[t].label, rows: [{ id: toggleId, parent: "settings", kind: "setting-toggle", icon: "",
+    var toggleId = PAGE_ID() + "." + toggles[t].key
+    entries.push({ name: toggles[t].label, rows: [{ id: toggleId, parent: PAGE_ID(), kind: "setting-toggle", icon: "",
       iconFont: "", label: toggles[t].label, title: "", target: "", description: "", action: "", provider: "",
       aliases: [], when: "", checked: "config", value: toggles[t].key, order: 0 }] })
     checked[toggleId] = settings[toggles[t].key] === true

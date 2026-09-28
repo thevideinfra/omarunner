@@ -352,16 +352,16 @@ test("fuzzyGaps counts skipped letters, -1 when out of order", () => {
 
 test("settings rows only list inside their own page", () => {
   const { items, itemOrder } = fixture()
-  items["settings"] = { id: "settings", parent: "root", kind: "menu", label: "Settings", aliases: [], order: 90 }
-  items["settings.width"] = { id: "settings.width", parent: "settings", kind: "menu", label: "Width · Normal", aliases: [], order: 91 }
-  items["settings.width.0"] = { id: "settings.width.0", parent: "settings.width", kind: "setting-option", label: "Narrow",
+  items["omarunner-settings"] = { id: "omarunner-settings", parent: "root", kind: "menu", label: "Settings", aliases: [], order: 90 }
+  items["omarunner-settings.width"] = { id: "omarunner-settings.width", parent: "omarunner-settings", kind: "menu", label: "Width · Normal", aliases: [], order: 91 }
+  items["omarunner-settings.width.0"] = { id: "omarunner-settings.width.0", parent: "omarunner-settings.width", kind: "setting-option", label: "Narrow",
     aliases: [], checked: "config", value: "width=420", order: 92 }
-  items["settings.fuzzy"] = { id: "settings.fuzzy", parent: "settings", kind: "setting-toggle", label: "Fuzzy matching",
+  items["omarunner-settings.fuzzy"] = { id: "omarunner-settings.fuzzy", parent: "omarunner-settings", kind: "setting-toggle", label: "Fuzzy matching",
     aliases: [], checked: "config", value: "fuzzy", order: 93 }
-  const order = itemOrder.concat(["settings", "settings.width", "settings.width.0", "settings.fuzzy"])
+  const order = itemOrder.concat(["omarunner-settings", "omarunner-settings.width", "omarunner-settings.width.0", "omarunner-settings.fuzzy"])
   assert.equal(RunnerModel.buildRows(items, order, {}, {}, "root", "narrow").rows.length, 0)
   assert.equal(RunnerModel.buildRows(items, order, {}, {}, "root", "fuzzy").rows.length, 0)
-  assert.deepEqual(RunnerModel.buildRows(items, order, {}, {}, "settings.width", "narrow").rows.map(x => x.label), ["Narrow"])
+  assert.deepEqual(RunnerModel.buildRows(items, order, {}, {}, "omarunner-settings.width", "narrow").rows.map(x => x.label), ["Narrow"])
 })
 
 test("fuzzy needs the first letter at a word start and a tight spread", () => {
@@ -396,13 +396,20 @@ test("fuzzy gaps are measured from the matched word", () => {
 
 test("Settings and Sources sub-entries stay off the root search", () => {
   const { items, itemOrder } = fixture()
-  items["settings"] = { id: "settings", parent: "root", kind: "menu", label: "Settings", aliases: [], order: 90 }
-  items["settings.fontFamily"] = { id: "settings.fontFamily", parent: "settings", kind: "menu", label: "Font · Omarchy default", aliases: [], order: 91 }
-  items["settings.fontFamily.1"] = { id: "settings.fontFamily.1", parent: "settings.fontFamily", kind: "setting-option", label: "Sans",
+  items["omarunner-settings"] = { id: "omarunner-settings", parent: "root", kind: "menu", label: "Settings", aliases: [], order: 90 }
+  items["omarunner-settings.fontFamily"] = { id: "omarunner-settings.fontFamily", parent: "omarunner-settings", kind: "menu", label: "Font · Omarchy default", aliases: [], order: 91 }
+  items["omarunner-settings.fontFamily.1"] = { id: "omarunner-settings.fontFamily.1", parent: "omarunner-settings.fontFamily", kind: "setting-option", label: "Sans",
     aliases: [], checked: "config", value: "fontFamily=sans-serif", order: 92 }
-  const order = itemOrder.concat(["settings", "settings.fontFamily", "settings.fontFamily.1"])
+  const order = itemOrder.concat(["omarunner-settings", "omarunner-settings.fontFamily", "omarunner-settings.fontFamily.1"])
   const labels = q => RunnerModel.buildRows(items, order, {}, {}, "root", q).rows.map(x => x.label)
   assert.deepEqual(labels("font"), ["Font"])
   assert.deepEqual(labels("settings"), ["Settings"])
-  assert.deepEqual(RunnerModel.buildRows(items, order, {}, {}, "settings", "font").rows.map(x => x.label), ["Font · Omarchy default"])
+  assert.deepEqual(RunnerModel.buildRows(items, order, {}, {}, "omarunner-settings", "font").rows.map(x => x.label), ["Font · Omarchy default"])
+})
+
+test("searching a config page keeps each row's own hint as the detail", () => {
+  const { items, itemOrder } = sourcesFixture()
+  items["sources.files"].description = "Files in your home folder by name"
+  const r = RunnerModel.buildRows(items, itemOrder, {}, {}, "sources", "files")
+  assert.equal(r.rows[0].detail, "Files in your home folder by name")
 })

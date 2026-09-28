@@ -272,7 +272,7 @@ test("category captions, details and Ctrl+N hints use the Hint size setting", ()
 test("a second press of either page button closes its page", () => {
   assert.ok(qml.includes('if (root.inPage(page)) { root.closePage(page); return }'))
   assert.ok(qml.includes('return root.activeMenu === page || root.activeMenu.indexOf(page + ".") === 0'))
-  assert.ok(qml.includes('root.closePage(page === "sources" ? "settings" : "sources")'))
+  assert.ok(qml.includes('root.closePage(page === "sources" ? "omarunner-settings" : "sources")'))
 })
 
 test("typing on a setting's page offers the typed value", () => {
@@ -306,5 +306,12 @@ test("the prefix-only guard spares fallback sources like Web", () => {
 test("group dividers live in the row, not in ListView section delegates", () => {
   assert.equal(qml.includes("section.delegate"), false)
   assert.ok(qml.includes("height: root.baseRowHeight + row.gapAbove"))
-  assert.ok(qml.includes('elide: row.kind === "source-toggle" ? Text.ElideRight : Text.ElideMiddle'))
+  assert.ok(qml.includes('elide: row.kind === "source-toggle" || row.kind === "setting-custom" ? Text.ElideRight : Text.ElideMiddle'))
+})
+
+test("the typed Use row follows the matching presets; Custom… applies a typed value", () => {
+  const append = qml.indexOf("for (var k = 0; k < built.rows.length; k++) displayModel.append(built.rows[k])")
+  const typed = qml.indexOf("var typed = SettingsModel.customDisplayRow(root.activeMenu, root.filterText)")
+  assert.ok(append >= 0 && typed > append)
+  assert.ok(qml.includes("var typedValue = SettingsModel.customDisplayRow(root.activeMenu, root.filterText)"))
 })

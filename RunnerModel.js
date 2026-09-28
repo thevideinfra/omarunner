@@ -324,21 +324,12 @@ function fuzzyGaps(needle, text) {
   return n.length === 0 ? -1 : pos - first + 1 - n.length
 }
 
-// The query with spaces removed, when long enough to match fuzzily.
-function isInsidePage(id, active) {
-  var pages = ["settings", "sources"]
-  for (var i = 0; i < pages.length; i++) {
-    var prefix = pages[i] + "."
-    if (String(id).indexOf(prefix) === 0) return active === pages[i] || String(active).indexOf(prefix) === 0
-  }
-  return true
-}
-
 function isConfigRow(entry) {
   return !!entry && (entry.kind === "source-toggle" || entry.kind === "setting-option" || entry.kind === "setting-toggle" ||
     entry.kind === "setting-custom")
 }
 
+// The query with spaces removed, when long enough to match fuzzily.
 function fuzzyNeedle(query) {
   var compact = String(query || "").toLowerCase().replace(/\s+/g, "")
   return compact.length >= 3 ? compact : ""
@@ -670,19 +661,17 @@ function buildRows(items, itemOrder, whenResults, checkedResults, activeMenu, qu
   for (var i = 0; i < order.length; i++) {
     var entry = item(items, order[i])
     if (!entry || entry.id === "root") continue
-    // A Sources-page toggle surfacing in a root search would let "files" +
-    // Enter switch the Files source off; toggles only list on their own page.
     // Config rows (Sources and Settings pages) only list on their own page,
     // so a root search for "files" or "wide" cannot flip a setting.
     if (isConfigRow(entry) && entry.parent !== active) continue
-    // The Settings and Sources pages' own entries ("Font · Omarchy default")
-    // only list while that page is open; the page items themselves stay
-    // searchable.
-    if (!isInsidePage(entry.id, active)) continue
+    // Settings submenus ("Font · Omarchy default") stay off the root search;
+    // any other page already drops them as non-descendants below.
+    if (active === "root" && String(entry.id).indexOf("omarunner-settings.") === 0) continue
     if (!isDescendantOf(items, entry.id, active)) continue
     if (!matchesQuery(entry, trimmed, isVisible(items, itemOrder, whenResults, entry), fuzzy)) continue
 
-    var detail = parentPathFor(items, entry.id)
+    // Config rows keep their own hint (Sources, Custom…) instead of a path.
+    var detail = isConfigRow(entry) ? String(entry.description || "") : parentPathFor(items, entry.id)
     var row = displayRow(items, itemOrder, checkedResults, entry, detail, searchScore(items, entry, trimmed, fuzzy))
     if (entry.parent === active) currentRows.push(row)
     else drilldownRows.push(row)

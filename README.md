@@ -14,12 +14,15 @@ Omarchy theme with no configuration.
 
 ![Search results grouped by kind, with Ctrl+number hints](assets/omarunneromarchy.png)
 
-| | |
-|---|---|
-| ![Collapsed: one input line](assets/omarunner.png) | ![Clipboard history behind the cb prefix](assets/omarunnercb.png) |
-| ![Menu and file results](assets/omarunnertest.png) | ![Web search with dd and gg](assets/omarunnerddgg.png) |
-| ![Sources page with hints](assets/omarunnerfilter.png) | ![Settings page](assets/omarunnersettings.png) |
-| ![Apps submenu](assets/omarunnerapps.png) | |
+<p>
+  <img src="assets/omarunner.png" alt="Collapsed: one input line" width="49%">
+  <img src="assets/omarunnercb.png" alt="Clipboard history behind the cb prefix" width="49%">
+  <img src="assets/omarunnertest.png" alt="Menu and file results" width="49%">
+  <img src="assets/omarunnerddgg.png" alt="Web search with dd and gg" width="49%">
+  <img src="assets/omarunnerfilter.png" alt="Sources page with hints" width="49%">
+  <img src="assets/omarunnersettings.png" alt="Settings page" width="49%">
+  <img src="assets/omarunnerapps.png" alt="Apps submenu" width="49%">
+</p>
 
 ## Requirements
 
@@ -82,7 +85,7 @@ omarunner [toggle|summon|close|refresh|ping] [route]
 
 `toggle` is the default verb and `root` the default route. A route is a menu item
 id (`setup.power`) or an alias (`power`), the same routes `omarchy-menu` accepts,
-plus `sources` and `settings` for omarunner's own pages.
+plus `sources` and `omarunner-settings` for omarunner's own pages.
 
 To have `omarunner` on your PATH:
 

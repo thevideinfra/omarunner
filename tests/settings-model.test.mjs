@@ -36,24 +36,24 @@ test("applyOption parses numeric and string values", () => {
 
 test("the page shows current values and ticks the chosen option", () => {
   const page = S.pageRows(S.resolve({ settings: { width: 680 } }))
-  const width = page.rows.find(r => r.id === "settings.width")
+  const width = page.rows.find(r => r.id === "omarunner-settings.width")
   assert.equal(width.label, "Width · Wide")
   assert.equal(width.kind, "menu")
-  const wide = page.rows.find(r => r.parent === "settings.width" && r.label === "Wide")
+  const wide = page.rows.find(r => r.parent === "omarunner-settings.width" && r.label === "Wide")
   assert.equal(wide.kind, "setting-option")
   assert.equal(wide.value, "width=680")
   assert.equal(page.checked[wide.id], true)
-  const fuzzy = page.rows.find(r => r.id === "settings.fuzzy")
+  const fuzzy = page.rows.find(r => r.id === "omarunner-settings.fuzzy")
   assert.equal(fuzzy.kind, "setting-toggle")
-  assert.equal(page.checked["settings.fuzzy"], true)
+  assert.equal(page.checked["omarunner-settings.fuzzy"], true)
 })
 
 test("the Settings page lists its entries alphabetically, choices in preset order", () => {
   const page = S.pageRows(S.defaults())
-  const top = page.rows.filter(r => r.parent === "settings").map(r => r.label.split(" · ")[0])
+  const top = page.rows.filter(r => r.parent === "omarunner-settings").map(r => r.label.split(" · ")[0])
   assert.deepEqual(top, [...top].sort((a, b) => a.localeCompare(b)))
   assert.equal(top[0], "Border")
-  const widths = page.rows.filter(r => r.parent === "settings.width").map(r => r.label)
+  const widths = page.rows.filter(r => r.parent === "omarunner-settings.width").map(r => r.label)
   assert.deepEqual(widths, ["Narrow", "Normal", "Wide", "Extra wide", "Custom…"])
   assert.deepEqual(page.rows.map(r => r.order), page.rows.map((_, i) => i))
 })
@@ -84,24 +84,24 @@ test("customChoice parses typed input per setting", () => {
 
 test("a custom value labels the page row and ticks the Custom row", () => {
   const page = S.pageRows(S.resolve({ settings: { width: 600, fontFamily: "Adwaita Sans" } }))
-  assert.equal(page.rows.find(r => r.id === "settings.width").label, "Width · Custom (600)")
-  assert.equal(page.rows.find(r => r.id === "settings.fontFamily").label, "Font · Custom (Adwaita Sans)")
-  const custom = page.rows.find(r => r.id === "settings.width.custom")
+  assert.equal(page.rows.find(r => r.id === "omarunner-settings.width").label, "Width · Custom (600)")
+  assert.equal(page.rows.find(r => r.id === "omarunner-settings.fontFamily").label, "Font · Custom (Adwaita Sans)")
+  const custom = page.rows.find(r => r.id === "omarunner-settings.width.custom")
   assert.equal(custom.kind, "setting-custom")
   assert.equal(custom.description, "Type a number, 300–1600")
-  assert.equal(page.checked["settings.width.custom"], true)
-  assert.equal(page.checked["settings.rows.custom"], false)
+  assert.equal(page.checked["omarunner-settings.width.custom"], true)
+  assert.equal(page.checked["omarunner-settings.rows.custom"], false)
 })
 
 test("customDisplayRow offers the typed value as an option row", () => {
-  const row = S.customDisplayRow("settings.width", "600")
+  const row = S.customDisplayRow("omarunner-settings.width", "600")
   assert.equal(row.label, "Use 600")
   assert.equal(row.kind, "setting-option")
   assert.equal(row.value, "width=600")
   assert.equal(S.applyOption({}, row.value).settings.width, 600)
-  assert.equal(S.customDisplayRow("settings.width", "abc"), null)
-  assert.equal(S.customDisplayRow("settings", "600"), null)
-  assert.equal(S.customDisplayRow("settings.fontFamily", "Iosevka").value, "fontFamily=Iosevka")
+  assert.equal(S.customDisplayRow("omarunner-settings.width", "abc"), null)
+  assert.equal(S.customDisplayRow("omarunner-settings", "600"), null)
+  assert.equal(S.customDisplayRow("omarunner-settings.fontFamily", "Iosevka").value, "fontFamily=Iosevka")
 })
 
 test("opacity and corner radius have presets, a theme default and custom ranges", () => {
@@ -115,4 +115,28 @@ test("opacity and corner radius have presets, a theme default and custom ranges"
   assert.deepEqual(S.customChoice("opacity", "75%"), { value: 75, label: "75%" })
   assert.deepEqual(S.customChoice("radius", "20"), { value: 20, label: "20" })
   assert.equal(S.customChoice("radius", "31"), null)
+})
+
+// -- Review fixes.
+
+test("a typed value equal to a preset offers no duplicate Use row", () => {
+  assert.equal(S.customDisplayRow("omarunner-settings.fontScale", "85"), null)
+  assert.equal(S.customDisplayRow("omarunner-settings.rows", "12"), null)
+  assert.equal(S.customDisplayRow("omarunner-settings.fontFamily", "sans-serif"), null)
+  assert.equal(S.customDisplayRow("omarunner-settings.fontScale", "92").label, "Use 92%")
+})
+
+test("units must match the setting", () => {
+  assert.equal(S.customChoice("width", "600%"), null)
+  assert.equal(S.customChoice("opacity", "50px"), null)
+  assert.deepEqual(S.customChoice("width", "600px"), { value: 600, label: "600" })
+  assert.deepEqual(S.customChoice("opacity", "50%"), { value: 50, label: "50%" })
+  assert.equal(S.customChoice("rows", "10%"), null)
+  assert.deepEqual(S.customChoice("rows", "10"), { value: 10, label: "10" })
+})
+
+test("a hand-edited font name is trimmed, and blank means the default", () => {
+  assert.equal(S.resolve({ settings: { fontFamily: "  " } }).fontFamily, "")
+  assert.equal(S.resolve({ settings: { fontFamily: "  Iosevka " } }).fontFamily, "Iosevka")
+  assert.equal(S.resolve({ settings: { fontFamily: "x".repeat(65) } }).fontFamily, "")
 })

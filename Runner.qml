@@ -462,10 +462,12 @@ Item {
     root.searchDivider = built.searchDivider
     root.sectionLabels = built.sectionLabels || ({})
 
-    // On a setting's page, a typed value becomes a "Use …" row at the top.
+    for (var k = 0; k < built.rows.length; k++) displayModel.append(built.rows[k])
+    // On a setting's page, a typed value becomes a "Use …" row after the
+    // matching presets, so typing to find a preset and pressing Enter picks
+    // the preset, not the raw text.
     var typed = SettingsModel.customDisplayRow(root.activeMenu, root.filterText)
     if (typed) displayModel.append(typed)
-    for (var k = 0; k < built.rows.length; k++) displayModel.append(built.rows[k])
     layoutSerial += 1
 
     if (displayModel.count === 0) selectedIndex = 0
@@ -596,7 +598,7 @@ Item {
     var order = []
     for (var i = 0; i < root.itemOrder.length; i++) {
       var id = root.itemOrder[i]
-      if (id === "sources" || id.indexOf("sources.") === 0 || id === "settings" || id.indexOf("settings.") === 0) continue
+      if (id === "sources" || id.indexOf("sources.") === 0 || id === "omarunner-settings" || id.indexOf("omarunner-settings.") === 0) continue
       items[id] = root.items[id]
       order.push(id)
     }
@@ -621,10 +623,10 @@ Item {
       checked[rows[r].id] = sourceConfig.isEnabled(rows[r].value)
     }
     // The Settings page: preset submenus and toggles, ✓ from the config.
-    items["settings"] = { id: "settings", parent: "root", kind: "menu", icon: "\uf013", iconFont: "", label: "Settings",
+    items["omarunner-settings"] = { id: "omarunner-settings", parent: "root", kind: "menu", icon: "\uf013", iconFont: "", label: "Settings",
       title: "Settings", target: "", description: "Size, font, look and matching", action: "", provider: "",
       aliases: ["preferences", "omarunner settings"], when: "", checked: "", order: order.length }
-    order.push("settings")
+    order.push("omarunner-settings")
     // Resolved here, not via root.settings: this runs from onConfigChanged at
     // startup, before that binding has a value.
     var page = SettingsModel.pageRows(SettingsModel.resolve(sourceConfig.config))
@@ -678,11 +680,11 @@ Item {
 
   function togglePage(page) {
     if (root.inPage(page)) { root.closePage(page); return }
-    root.closePage(page === "sources" ? "settings" : "sources")
+    root.closePage(page === "sources" ? "omarunner-settings" : "sources")
     root.setActiveMenu(page, true, false)
   }
 
-  function toggleSettingsPage() { root.togglePage("settings") }
+  function toggleSettingsPage() { root.togglePage("omarunner-settings") }
 
   function toggleSourcesPage() { root.togglePage("sources") }
 
@@ -721,7 +723,13 @@ Item {
       sourceConfig.apply(SettingsModel.applyOption(sourceConfig.config, row.value))
       root.goBack()
     } else if (row.kind === "setting-custom") {
-      // Only a reminder; typing the value offers the row that applies it.
+      // A reminder; with a valid value typed (which can also match the
+      // reminder's own range text), it applies that value.
+      var typedValue = SettingsModel.customDisplayRow(root.activeMenu, root.filterText)
+      if (typedValue) {
+        sourceConfig.apply(SettingsModel.applyOption(sourceConfig.config, typedValue.value))
+        root.goBack()
+      }
     } else if (row.kind === "setting-toggle") {
       sourceConfig.apply(SettingsModel.toggled(sourceConfig.config, row.value))
     } else if (row.kind === "source") {
@@ -1251,7 +1259,7 @@ Item {
           // Settings gear: size, font, look and fuzzy matching.
           Rectangle {
             id: gearButton
-            readonly property bool active: root.activeMenu === "settings" || root.activeMenu.indexOf("settings.") === 0
+            readonly property bool active: root.activeMenu === "omarunner-settings" || root.activeMenu.indexOf("omarunner-settings.") === 0
             width: root.headerHeight
             height: root.headerHeight
             radius: root.cornerRadius
@@ -1468,8 +1476,9 @@ Item {
                     opacity: 0.52
                     font.family: root.textFamily
                     font.pixelSize: root.fontHint
-                    // Paths lose their middle; Sources hints read left to right.
-                    elide: row.kind === "source-toggle" ? Text.ElideRight : Text.ElideMiddle
+                    // Paths lose their middle; hints (Sources, Custom…) read
+                    // left to right.
+                    elide: row.kind === "source-toggle" || row.kind === "setting-custom" ? Text.ElideRight : Text.ElideMiddle
                   }
                 }
 
