@@ -623,9 +623,11 @@ Item {
       checked[rows[r].id] = sourceConfig.isEnabled(rows[r].value)
     }
     // The Settings page: preset submenus and toggles, ✓ from the config.
-    items["omarunner-settings"] = { id: "omarunner-settings", parent: "root", kind: "menu", icon: "\uf013", iconFont: "", label: "Settings",
-      title: "Settings", target: "", description: "Size, font, look and matching", action: "", provider: "",
-      aliases: ["preferences", "omarunner settings"], when: "", checked: "", order: order.length }
+    // Labelled as omarunner's own, so a search for "settings" does not read
+    // as the system settings (Omarchy's Setup, which ranks first).
+    items["omarunner-settings"] = { id: "omarunner-settings", parent: "root", kind: "menu", icon: "\uf013", iconFont: "", label: "omarunner Settings",
+      title: "omarunner Settings", target: "", description: "Launcher size, font, look and matching", action: "", provider: "",
+      aliases: ["launcher settings", "runner settings"], when: "", checked: "", order: order.length }
     order.push("omarunner-settings")
     // Resolved here, not via root.settings: this runs from onConfigChanged at
     // startup, before that binding has a value.

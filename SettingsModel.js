@@ -3,8 +3,8 @@
 function CHOICES() {
   return [
     { key: "width", label: "Width", choices: [
-      { value: 420, label: "Narrow" }, { value: 510, label: "Normal" },
-      { value: 680, label: "Wide" }, { value: 840, label: "Extra wide" }] },
+      { value: 510, label: "Narrow" }, { value: 680, label: "Normal" },
+      { value: 840, label: "Wide" }, { value: 1000, label: "Extra wide" }] },
     { key: "rows", label: "Rows before scrolling", choices: [
       { value: 5, label: "5" }, { value: 7, label: "7" }, { value: 9, label: "9" }, { value: 12, label: "12" }] },
     { key: "density", label: "Row height", choices: [

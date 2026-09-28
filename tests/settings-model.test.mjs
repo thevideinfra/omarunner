@@ -35,13 +35,13 @@ test("applyOption parses numeric and string values", () => {
 })
 
 test("the page shows current values and ticks the chosen option", () => {
-  const page = S.pageRows(S.resolve({ settings: { width: 680 } }))
+  const page = S.pageRows(S.resolve({ settings: { width: 840 } }))
   const width = page.rows.find(r => r.id === "omarunner-settings.width")
   assert.equal(width.label, "Width · Wide")
   assert.equal(width.kind, "menu")
   const wide = page.rows.find(r => r.parent === "omarunner-settings.width" && r.label === "Wide")
   assert.equal(wide.kind, "setting-option")
-  assert.equal(wide.value, "width=680")
+  assert.equal(wide.value, "width=840")
   assert.equal(page.checked[wide.id], true)
   const fuzzy = page.rows.find(r => r.id === "omarunner-settings.fuzzy")
   assert.equal(fuzzy.kind, "setting-toggle")
@@ -139,4 +139,13 @@ test("a hand-edited font name is trimmed, and blank means the default", () => {
   assert.equal(S.resolve({ settings: { fontFamily: "  " } }).fontFamily, "")
   assert.equal(S.resolve({ settings: { fontFamily: "  Iosevka " } }).fontFamily, "Iosevka")
   assert.equal(S.resolve({ settings: { fontFamily: "x".repeat(65) } }).fontFamily, "")
+})
+
+test("width presets start at the old Normal: Narrow 510 up to Extra wide 1000", () => {
+  const page = S.pageRows(S.defaults())
+  const widths = page.rows.filter(r => r.parent === "omarunner-settings.width" && r.kind === "setting-option").map(r => r.label + "=" + r.value)
+  assert.deepEqual(widths, ["Narrow=width=510", "Normal=width=680", "Wide=width=840", "Extra wide=width=1000"])
+  assert.equal(page.rows.find(r => r.id === "omarunner-settings.width").label, "Width · Narrow")
+  assert.equal(S.resolve({ settings: { width: 420 } }).width, 420)
+  assert.equal(S.currentLabel("width", 420), "Custom (420)")
 })
