@@ -602,8 +602,8 @@ Item {
       items[id] = root.items[id]
       order.push(id)
     }
-    items["sources"] = { id: "sources", parent: "root", kind: "menu", icon: "󰍉", iconFont: "", label: "Sources",
-      title: "Sources", target: "", description: "Choose what omarunner searches", action: "", provider: "",
+    items["sources"] = { id: "sources", parent: "root", kind: "menu", icon: "󰍉", iconFont: "", label: "Omarunner Sources",
+      title: "Omarunner Sources", target: "", description: "Choose what omarunner searches", action: "", provider: "",
       aliases: ["search sources", "runner"], when: "", checked: "", order: order.length }
     order.push("sources")
     // Applications and Omarchy are built into buildRows, not registered
@@ -625,8 +625,8 @@ Item {
     // The Settings page: preset submenus and toggles, ✓ from the config.
     // Labelled as omarunner's own, so a search for "settings" does not read
     // as the system settings (Omarchy's Setup, which ranks first).
-    items["omarunner-settings"] = { id: "omarunner-settings", parent: "root", kind: "menu", icon: "\uf013", iconFont: "", label: "omarunner Settings",
-      title: "omarunner Settings", target: "", description: "Launcher size, font, look and matching", action: "", provider: "",
+    items["omarunner-settings"] = { id: "omarunner-settings", parent: "root", kind: "menu", icon: "\uf013", iconFont: "", label: "Omarunner Settings",
+      title: "Omarunner Settings", target: "", description: "Launcher size, font, look and matching", action: "", provider: "",
       aliases: ["launcher settings", "runner settings"], when: "", checked: "", order: order.length }
     order.push("omarunner-settings")
     // Resolved here, not via root.settings: this runs from onConfigChanged at

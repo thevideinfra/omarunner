@@ -316,6 +316,7 @@ test("the typed Use row follows the matching presets; Custom… applies a typed 
   assert.ok(qml.includes("var typedValue = SettingsModel.customDisplayRow(root.activeMenu, root.filterText)"))
 })
 
-test("the Settings page is labelled as omarunner's own", () => {
-  assert.ok(qml.includes('label: "omarunner Settings",\n      title: "omarunner Settings"'))
+test("the Settings and Sources pages are labelled as omarunner's own", () => {
+  assert.ok(qml.includes('label: "Omarunner Settings",\n      title: "Omarunner Settings"'))
+  assert.ok(qml.includes('label: "Omarunner Sources",\n      title: "Omarunner Sources"'))
 })

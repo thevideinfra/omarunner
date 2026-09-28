@@ -4,7 +4,7 @@ import { loadJsModule } from "./helpers/load-js-module.mjs"
 const S = await loadJsModule("SettingsModel.js")
 
 test("defaults match the tuned launcher", () => {
-  assert.deepEqual(S.resolve({}), { width: 510, rows: 9, density: 28, fontScale: 85, hintScale: 100, fontFamily: "", border: 2,
+  assert.deepEqual(S.resolve({}), { width: 420, rows: 9, density: 28, fontScale: 85, hintScale: 100, fontFamily: "", border: 2,
     opacity: 100, radius: -1,
     fuzzy: true, categories: true, hints: true })
 })
@@ -35,13 +35,13 @@ test("applyOption parses numeric and string values", () => {
 })
 
 test("the page shows current values and ticks the chosen option", () => {
-  const page = S.pageRows(S.resolve({ settings: { width: 840 } }))
+  const page = S.pageRows(S.resolve({ settings: { width: 510 } }))
   const width = page.rows.find(r => r.id === "omarunner-settings.width")
   assert.equal(width.label, "Width · Wide")
   assert.equal(width.kind, "menu")
   const wide = page.rows.find(r => r.parent === "omarunner-settings.width" && r.label === "Wide")
   assert.equal(wide.kind, "setting-option")
-  assert.equal(wide.value, "width=840")
+  assert.equal(wide.value, "width=510")
   assert.equal(page.checked[wide.id], true)
   const fuzzy = page.rows.find(r => r.id === "omarunner-settings.fuzzy")
   assert.equal(fuzzy.kind, "setting-toggle")
@@ -67,7 +67,7 @@ test("hint size resolves from its presets", () => {
 
 test("custom numbers inside the range resolve; outside fall back", () => {
   assert.equal(S.resolve({ settings: { width: 600 } }).width, 600)
-  assert.equal(S.resolve({ settings: { width: 5000 } }).width, 510)
+  assert.equal(S.resolve({ settings: { width: 5000 } }).width, 420)
   assert.equal(S.resolve({ settings: { border: 7 } }).border, 7)
   assert.equal(S.resolve({ settings: { rows: 2.5 } }).rows, 9)
 })
@@ -141,11 +141,11 @@ test("a hand-edited font name is trimmed, and blank means the default", () => {
   assert.equal(S.resolve({ settings: { fontFamily: "x".repeat(65) } }).fontFamily, "")
 })
 
-test("width presets start at the old Normal: Narrow 510 up to Extra wide 1000", () => {
+test("width presets start at the custom minimum: Narrow 300 up to Extra wide 680", () => {
   const page = S.pageRows(S.defaults())
   const widths = page.rows.filter(r => r.parent === "omarunner-settings.width" && r.kind === "setting-option").map(r => r.label + "=" + r.value)
-  assert.deepEqual(widths, ["Narrow=width=510", "Normal=width=680", "Wide=width=840", "Extra wide=width=1000"])
-  assert.equal(page.rows.find(r => r.id === "omarunner-settings.width").label, "Width · Narrow")
-  assert.equal(S.resolve({ settings: { width: 420 } }).width, 420)
-  assert.equal(S.currentLabel("width", 420), "Custom (420)")
+  assert.deepEqual(widths, ["Narrow=width=300", "Normal=width=420", "Wide=width=510", "Extra wide=width=680"])
+  assert.equal(page.rows.find(r => r.id === "omarunner-settings.width").label, "Width · Normal")
+  assert.equal(S.resolve({ settings: { width: 600 } }).width, 600)
+  assert.equal(S.currentLabel("width", 600), "Custom (600)")
 })

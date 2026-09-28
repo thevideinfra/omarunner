@@ -3,8 +3,8 @@
 function CHOICES() {
   return [
     { key: "width", label: "Width", choices: [
-      { value: 510, label: "Narrow" }, { value: 680, label: "Normal" },
-      { value: 840, label: "Wide" }, { value: 1000, label: "Extra wide" }] },
+      { value: 300, label: "Narrow" }, { value: 420, label: "Normal" },
+      { value: 510, label: "Wide" }, { value: 680, label: "Extra wide" }] },
     { key: "rows", label: "Rows before scrolling", choices: [
       { value: 5, label: "5" }, { value: 7, label: "7" }, { value: 9, label: "9" }, { value: 12, label: "12" }] },
     { key: "density", label: "Row height", choices: [
@@ -49,7 +49,7 @@ function TOGGLES() {
 }
 
 function defaults() {
-  return { width: 510, rows: 9, density: 28, fontScale: 85, hintScale: 100, fontFamily: "", border: 2, opacity: 100, radius: -1, fuzzy: true, categories: true, hints: true }
+  return { width: 420, rows: 9, density: 28, fontScale: 85, hintScale: 100, fontFamily: "", border: 2, opacity: 100, radius: -1, fuzzy: true, categories: true, hints: true }
 }
 
 function choiceFor(key) {
