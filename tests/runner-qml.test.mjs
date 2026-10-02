@@ -334,3 +334,8 @@ test("Settings toggles show the badge after the name; Sources toggles at the rig
   assert.match(qml, /StateBadge \{\s*visible: row\.kind === "setting-toggle"/)
   assert.equal(qml.includes('row.kind === "source-toggle" || row.kind === "setting-toggle"'), false)
 })
+
+test("the chevron's space is reserved on every row so Ctrl+N hints line up", () => {
+  assert.ok(qml.includes('visible: row.kind !== "source-toggle"'))
+  assert.ok(qml.includes('opacity: row.kind === "menu" || row.kind === "link" ? 0.36 : 0'))
+})

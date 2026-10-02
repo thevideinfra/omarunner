@@ -1607,9 +1607,12 @@ Item {
                   Text {
                     textFormat: Text.PlainText
                     text: "›"
-                    visible: row.kind === "menu" || row.kind === "link"
+                    // The chevron's space is reserved on every row (invisible
+                    // when absent) so the Ctrl+N hints line up; Sources rows
+                    // have none, so their badge sits at the right edge.
+                    visible: row.kind !== "source-toggle"
                     color: row.textColor
-                    opacity: 0.36
+                    opacity: row.kind === "menu" || row.kind === "link" ? 0.36 : 0
                     font.family: root.textFamily
                     font.pixelSize: root.fontHeading
                     anchors.verticalCenter: parent.verticalCenter
