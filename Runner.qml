@@ -137,50 +137,28 @@ Item {
   property int visibleRowsHeight: root.collapsed ? 0 : rowListHeight(layoutSerial, displayModel.count, filterText, searchDivider)
   property int cardHeight: Math.min(contentMargin * 2 + headerHeight + (root.collapsed ? 0 : contentSpacing + visibleRowsHeight), panel.height - Style.gapsOut * 2)
 
-  // On/off switch in the theme accent, as in Tandem and omaudiopanel: tinted
-  // accent track and accent knob when on, a dim neutral track when off.
-  // Presentation only; the row owns the click.
-  component AccentSwitch: Item {
-    id: sw
-    property bool checked: false
-    property color textColor: root.foreground
-
-    implicitWidth: Style.space(34)
-    implicitHeight: Style.space(18)
-    width: implicitWidth
-    height: implicitHeight
-
-    Rectangle {
-      anchors.fill: parent
-      radius: height / 2
-      color: sw.checked ? Util.alpha(Color.accent, 0.3) : Util.alpha(sw.textColor, 0.1)
-      border.width: 1
-      border.color: sw.checked ? Color.accent : Util.alpha(sw.textColor, 0.25)
-      Behavior on color { ColorAnimation { duration: 120 } }
-
-      Rectangle {
-        width: parent.height - Style.space(6)
-        height: width
-        radius: width / 2
-        anchors.verticalCenter: parent.verticalCenter
-        x: sw.checked ? parent.width - width - Style.space(3) : Style.space(3)
-        color: sw.checked ? Color.accent : Qt.darker(sw.textColor, 1.4)
-        Behavior on x { NumberAnimation { duration: 120 } }
-        Behavior on color { ColorAnimation { duration: 120 } }
-      }
-    }
-  }
-
   // ON / OFF pill: accent-tinted with accent text when on, dim when off.
   component StateBadge: Item {
     id: badge
     property bool on: false
     property color textColor: root.foreground
 
-    implicitWidth: badgeText.implicitWidth + Style.space(12)
+    // Both states take the width of "OFF", so badges line up in a column.
+    implicitWidth: widest.implicitWidth + Style.space(12)
     implicitHeight: badgeText.implicitHeight + Style.space(4)
     width: implicitWidth
     height: implicitHeight
+
+    Text {
+      id: widest
+      visible: false
+      textFormat: Text.PlainText
+      text: "OFF"
+      font.family: root.textFamily
+      font.pixelSize: root.fontCaption
+      font.bold: true
+      font.letterSpacing: 0.8
+    }
 
     Rectangle {
       anchors.fill: parent
@@ -1608,11 +1586,12 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                   }
 
-                  // On/off state of a Sources toggle. (Settings mixes toggles with
-                  // choices, so its toggles show an ON/OFF badge after the name.)
-                  AccentSwitch {
+                  // On/off state of a Sources toggle, at the right edge. (Settings
+                  // mixes toggles with choices, so its toggles show the same
+                  // badge after the name instead.)
+                  StateBadge {
                     visible: row.kind === "source-toggle"
-                    checked: root.checkedResults[row.itemId] === true
+                    on: root.checkedResults[row.itemId] === true
                     textColor: row.textColor
                     anchors.verticalCenter: parent.verticalCenter
                   }
