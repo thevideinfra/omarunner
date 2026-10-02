@@ -12,17 +12,33 @@ Omarchy theme with no configuration.
 
 ## Screenshots
 
-![Search results grouped by kind, with Ctrl+number hints](assets/omarunneromarchy.png)
+<div align="center">
 
-<p>
-  <img src="assets/omarunner.png" alt="Collapsed: one input line" width="49%">
-  <img src="assets/omarunnercb.png" alt="Clipboard history behind the cb prefix" width="49%">
-  <img src="assets/omarunnertest.png" alt="Menu and file results" width="49%">
-  <img src="assets/omarunnerddgg.png" alt="Web search with dd and gg" width="49%">
-  <img src="assets/omarunnerfilter.png" alt="Sources page with hints" width="49%">
-  <img src="assets/omarunnersettings.png" alt="Settings page" width="49%">
-  <img src="assets/omarunnerapps.png" alt="Apps submenu" width="49%">
-</p>
+<img src="assets/omarunner.png" alt="Collapsed: one input line" width="640"><br>
+<sub>Collapsed: one input line</sub>
+
+<img src="assets/omarunneromarchy.png" alt="Results grouped by kind, with Ctrl+number quick launch" width="640"><br>
+<sub>Results grouped by kind, with Ctrl+number quick launch</sub>
+
+<img src="assets/omarunnertest.png" alt="Menu entries and files" width="640"><br>
+<sub>Menu entries and files</sub>
+
+<img src="assets/omarunnerapps.png" alt="The Apps list" width="640"><br>
+<sub>The Apps list</sub>
+
+<img src="assets/omarunnercb.png" alt="Clipboard history behind the cb prefix" width="640"><br>
+<sub>Clipboard history behind the cb prefix</sub>
+
+<img src="assets/omarunnerddgg.png" alt="Web search with dd and gg" width="640"><br>
+<sub>Web search with dd and gg</sub>
+
+<img src="assets/omarunnerfilter.png" alt="The Omarunner Sources page" width="640"><br>
+<sub>The Omarunner Sources page</sub>
+
+<img src="assets/omarunnersettings.png" alt="The Omarunner Settings page" width="640"><br>
+<sub>The Omarunner Settings page</sub>
+
+</div>
 
 ## Requirements
 
