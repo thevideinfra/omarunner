@@ -12,7 +12,9 @@ test("arithmetic needs a binary operator unless forced with =", () => {
   assert.equal(C.isArithmetic("3 × 4"), true)
   assert.equal(C.isArithmetic("firefox"), false)
   assert.equal(C.isArithmetic("1,5+2"), false)
-  assert.equal(C.isArithmetic("2024-09"), true)
+  assert.equal(C.isArithmetic("100-50"), true)
+  assert.equal(C.isArithmetic("5-3"), true)
+  assert.equal(C.isArithmetic("2024 - 09"), true)
 })
 
 test("evaluate honours precedence, associativity and unary minus", () => {
@@ -78,4 +80,18 @@ test("qalcExpression rewrites launcher shorthand", () => {
   assert.equal(C.qalcExpression("90 min to +h"), "90 min to +h")
   assert.equal(C.qalcExpression("20% of 300"), "20% * 300")
   assert.equal(C.qalcExpression("sqrt(16)"), "sqrt(16)")
+})
+
+test("dates and phone numbers are not subtraction", () => {
+  for (const q of ["2024-01-15", "2024-09", "555-1234", "555-123-4567", "10-11-12"]) assert.equal(C.isArithmetic(q), false, q)
+  assert.equal(C.isArithmetic("=2024-01-15"), true)
+})
+
+test("a percentage the local parser cannot read falls back to qalc", () => {
+  assert.equal(C.needsQalcFallback("100 + 10%"), true)
+  assert.equal(C.needsQalcFallback("=50%"), true)
+  assert.equal(C.needsQalcFallback("2+2"), false)
+  assert.equal(C.needsQalcFallback("10 % 3"), false)
+  assert.equal(C.needsQalcFallback("1/0"), false)
+  assert.equal(C.qalcExpression("100 + 10%"), "100 + 10%")
 })

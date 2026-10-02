@@ -10,9 +10,14 @@ function fdArgs(query, home) {
   if (terms.join(" ").length < 2) return []
   var pattern = terms.map(escapeRegex).join(".*")
   var args = ["fd", "--type", "f", "--ignore-case", "--color", "never"]
+  // fd refuses a pattern with "/" ("docs/report"); --full-path matches the
+  // whole path instead, which is what such a query means.
+  if (pattern.indexOf("/") >= 0) args.push("--full-path")
   var excludes = EXCLUDES()
   for (var i = 0; i < excludes.length; i++) args.push("--exclude", excludes[i])
-  return args.concat(["--max-results", "40", pattern, String(home || "")])
+  // fd returns files in arbitrary order, so the cap is wide: fileRows ranks
+  // them and the group cap (5) is applied after.
+  return args.concat(["--max-results", "500", pattern, String(home || "")])
 }
 
 // Fuzzy mode: fd lists every file, fzf ranks them (path scheme favours the
@@ -28,10 +33,11 @@ function fzfArgs(query, home) {
   return ["sh", "-c", "q=$1; shift; \"$@\" | fzf --filter \"$q\" --scheme=path | head -n 40", "sh", trimmed].concat(fd)
 }
 
-// Dot-directories are already skipped (no --hidden); these are the bulky
-// non-hidden or explicitly-named trees that still drown real documents.
+// Dot-directories (.git, .cache, .cargo, .local/share...) are already skipped
+// because fd runs without --hidden; these are the bulky non-hidden trees that
+// still drown real documents.
 function EXCLUDES() {
-  return [".git", "node_modules", ".cache", ".cargo", ".rustup", ".npm", ".oh-my-zsh", "go/pkg", ".local/share"]
+  return ["node_modules", "go/pkg"]
 }
 
 // encodeURI leaves "#" and "?" alone, which a file URL reads as a fragment
@@ -79,8 +85,8 @@ function fileRow(path, home) {
 }
 
 // fd walks in parallel, so its output order changes run to run. Rank before
-// the group cap: basename starts with the first query term, then paths with
-// no hidden segment, then shallower paths, then alphabetical.
+// the group cap: basename starts with the first query term, then shallower
+// paths, then alphabetical.
 // keepOrder: the lines are already ranked (fzf), so skip the sort.
 function fileRows(stdoutText, home, query, keepOrder) {
   var lines = String(stdoutText || "").split("\n")
@@ -90,18 +96,15 @@ function fileRows(stdoutText, home, query, keepOrder) {
     var line = lines[i].trim()
     if (!line) continue
     var row = fileRow(line, home)
-    var rel = "/" + row.detail
     ranked.push({
       row: row,
       prefix: first && row.label.toLowerCase().indexOf(first) === 0 ? 0 : 1,
-      hidden: rel.indexOf("/.") >= 0 ? 1 : 0,
       depth: row.detail.split("/").length,
       path: row.value
     })
   }
   if (!keepOrder) ranked.sort(function(a, b) {
     if (a.prefix !== b.prefix) return a.prefix - b.prefix
-    if (a.hidden !== b.hidden) return a.hidden - b.hidden
     if (a.depth !== b.depth) return a.depth - b.depth
     return a.path < b.path ? -1 : a.path > b.path ? 1 : 0
   })

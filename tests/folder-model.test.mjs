@@ -78,3 +78,10 @@ test("fuzzy folder hits keep the letters close", () => {
   assert.equal(F.matchTier("chromium-headless", "code", true), -1)
   assert.equal(F.matchTier("omarunner", "omrnr", true), 4)
 })
+
+test("~/.config itself is a candidate, not only its subfolders", () => {
+  assert.ok(F.listArgs()[2].includes("printf '%s\\n' \"$HOME/.config\""))
+  const list = F.parseList("/home/ks/.config\n/home/ks/.config/hypr\n")
+  assert.equal(F.matches(list, "config", true)[0].path, "/home/ks/.config")
+  assert.equal(F.matches(list, ".config", true)[0].path, "/home/ks/.config")
+})

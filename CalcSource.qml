@@ -16,7 +16,9 @@ Item {
   signal results(int serial, var rows)
 
   function search(query, serial) {
-    if (CalcModel.isArithmetic(query)) {
+    if (CalcModel.needsQalcFallback(query)) {
+      runner.run(CalcModel.qalcArgs(query), serial, query)
+    } else if (CalcModel.isArithmetic(query)) {
       runner.cancel()
       var value = CalcModel.format(CalcModel.evaluate(query.replace(/^\s*=/, "")))
       root.results(serial, value ? [CalcModel.row(value, query)] : [])

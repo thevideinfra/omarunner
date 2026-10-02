@@ -11,12 +11,22 @@ function normalize(expr) {
   return String(expr || "").replace(/×/g, "*").replace(/÷/g, "/")
 }
 
+// Digits joined by dashes with no spaces: 2024-01-15, 2024-09, 555-1234,
+// 555-123-4567. Subtraction written that way is rare; "=" still forces maths.
+function looksLikeDateOrPhone(expr) {
+  if (!/^\d+(-\d+)+$/.test(expr)) return false
+  var parts = expr.split("-")
+  if (parts.length > 2) return true
+  return /^\d{4}$/.test(parts[0]) && /^\d{1,2}$/.test(parts[1]) || /^\d{3}$/.test(parts[0]) && /^\d{4}$/.test(parts[1])
+}
+
 // Digits, operators and parentheses only, with at least one binary operator
 // between operands — "2" is not a calculation, "=2" is.
 function isArithmetic(query) {
   var expr = normalize(stripPrefix(query))
   if (!expr || !/^[\d\s.+\-*\/%^()]+$/.test(expr) || !/\d/.test(expr)) return false
   if (forced(query)) return true
+  if (looksLikeDateOrPhone(expr)) return false
   return /[\d.)]\s*[+\-*\/%^]\s*[-\d.(]/.test(expr)
 }
 
@@ -50,6 +60,13 @@ function qalcExpression(query) {
   }
   if (target.charAt(0) !== "+" && target.charAt(0) !== "-") target = "-" + target
   return from + " to " + target
+}
+
+// An arithmetic-looking query the local parser cannot read, because of a
+// percentage ("100 + 10%", "=50%"): qalc understands those.
+function needsQalcFallback(query) {
+  var expr = stripPrefix(query)
+  return isArithmetic(query) && expr.indexOf("%") >= 0 && evaluate(expr) === null
 }
 
 // Leading space keeps an expression like "-5 to f" from reading as an option;
@@ -158,7 +175,7 @@ function copyArgv(value) { return value ? ["wl-copy", "--", String(value)] : [] 
 
 if (typeof module !== "undefined") {
   module.exports = {
-    isArithmetic: isArithmetic, wantsQalc: wantsQalc, qalcExpression: qalcExpression, qalcArgs: qalcArgs, parseQalc: parseQalc,
+    isArithmetic: isArithmetic, needsQalcFallback: needsQalcFallback, wantsQalc: wantsQalc, qalcExpression: qalcExpression, qalcArgs: qalcArgs, parseQalc: parseQalc,
     evaluate: evaluate, format: format, row: row, copyArgv: copyArgv
   }
 }

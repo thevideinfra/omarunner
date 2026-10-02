@@ -45,7 +45,7 @@ test("> claims the query and yields the command", () => {
 })
 
 test("terminal runs keep the shell open; background runs do not", () => {
-  assert.deepEqual(Cmd.terminalArgv("htop"), ["omarchy-launch-terminal", "bash", "-lc", "htop; exec bash"])
+  assert.deepEqual(Cmd.terminalArgv("htop"), ["omarchy-launch-terminal", "bash", "-lc", "htop\nexec bash"])
   assert.deepEqual(Cmd.backgroundArgv("notify-send hi"), ["bash", "-lc", "notify-send hi"])
   assert.deepEqual(Cmd.terminalArgv(""), [])
   assert.equal(Cmd.row("htop").value, "htop")
@@ -53,12 +53,17 @@ test("terminal runs keep the shell open; background runs do not", () => {
 
 // -- Kill
 
-const PS = `    1 systemd /sbin/init
-  812 firefox /usr/lib/firefox/firefox
-  900 Web\\ Content /usr/lib/firefox/firefox -contentproc
- 1200 ps ps -x -o pid=,comm=,args=
- 1300 foot foot -e firefox-helper
-`
+// ps -o pid=,comm:15=,args=: pid right-aligned in 7, comm padded to 15 (it can
+// hold spaces and is cut at 15), then args. Built the same way here.
+const psLine = (pid, comm, args) => String(pid).padStart(7) + " " + comm.slice(0, 15).padEnd(15) + " " + args
+const PS = [
+  psLine(1, "systemd", "/sbin/init"),
+  psLine(812, "firefox", "/usr/lib/firefox/firefox"),
+  psLine(900, "Web Content", "/usr/lib/firefox/firefox -contentproc"),
+  psLine(1200, "ps", "ps -x -o pid=,comm:15=,args="),
+  psLine(1300, "foot", "foot -e firefox-helper"),
+  psLine(3500, "uwsm-app <defunct>", "[uwsm-app] <defunct>")
+].join("\n") + "\n"
 
 test("kill claims only its keyword", () => {
   assert.equal(K.claims("kill fire"), true)
@@ -70,6 +75,13 @@ test("ps output is parsed without ps itself", () => {
   const procs = K.parsePs(PS)
   assert.equal(procs.some(p => p.name === "ps"), false)
   assert.deepEqual(procs[1], { pid: "812", name: "firefox", args: "/usr/lib/firefox/firefox" })
+})
+
+test("a comm with spaces stays whole and zombies are skipped", () => {
+  const procs = K.parsePs(PS)
+  assert.deepEqual(procs.find(p => p.pid === "900"), { pid: "900", name: "Web Content", args: "/usr/lib/firefox/firefox -contentproc" })
+  assert.equal(procs.some(p => p.pid === "3500"), false)
+  assert.deepEqual(K.psArgs(), ["ps", "-x", "-o", "pid=,comm:15=,args="])
 })
 
 test("matches rank name-prefix hits first and need a filter", () => {
@@ -233,4 +245,13 @@ test("recent fuzzy hits start at a word and keep letters close", () => {
 test("image thumbnails escape # and ?", () => {
   const history = [{ type: "image", mime: "image/png", path: "/tmp/a #1?.png" }]
   assert.equal(Cb.row(Cb.matches(history, "img")[0]).appIcon, "file:///tmp/a%20%231%3F.png")
+})
+
+test("a command ending in & or a comment still runs and keeps the terminal open", async () => {
+  const { spawnSync } = await import("node:child_process")
+  for (const cmd of ["sleep 5 &", "ls # note", "echo hi"]) {
+    const script = Cmd.terminalArgv(cmd)[3]
+    assert.equal(script.split("\n").pop(), "exec bash", cmd)
+    assert.equal(spawnSync("bash", ["-n", "-c", script]).status, 0, cmd)
+  }
 })

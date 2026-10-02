@@ -8,13 +8,13 @@ const HOME = "/home/ks"
 // (dot-directories are skipped by default, not searched) and added --exclude
 // for a set of bulky cache/vendor trees beyond .git and node_modules. The
 // original plan's argv index (13) predates both changes.
+// Dot-directories (.git, .cache, .cargo...) are skipped by fd itself, so only
+// the bulky non-hidden trees are excluded.
 const BASE_ARGS = ["fd", "--type", "f", "--ignore-case", "--color", "never",
-  "--exclude", ".git", "--exclude", "node_modules", "--exclude", ".cache", "--exclude", ".cargo",
-  "--exclude", ".rustup", "--exclude", ".npm", "--exclude", ".oh-my-zsh", "--exclude", "go/pkg",
-  "--exclude", ".local/share"]
+  "--exclude", "node_modules", "--exclude", "go/pkg"]
 
 test("fdArgs builds a case-insensitive home search, excluding cache/vendor trees", () => {
-  assert.deepEqual(F.fdArgs("invoice", HOME), [...BASE_ARGS, "--max-results", "40", "invoice", HOME])
+  assert.deepEqual(F.fdArgs("invoice", HOME), [...BASE_ARGS, "--max-results", "500", "invoice", HOME])
 })
 
 test("fdArgs no longer passes --hidden", () => {
@@ -62,7 +62,7 @@ test("fileRows parses fd output and skips blank lines", () => {
 
 // fileRows(stdout, home, query) reconciled against the shipped FileModel.js:
 // it now takes a query and sorts before the group cap: basename-prefix match,
-// then paths with no hidden segment, then shallower depth, then alphabetical.
+// then shallower depth, then alphabetical.
 // None of this ranking existed in either plan document.
 
 test("fileRows ranks a basename-prefix match ahead of a mere substring match", () => {
@@ -71,19 +71,13 @@ test("fileRows ranks a basename-prefix match ahead of a mere substring match", (
   assert.deepEqual(rows.map(r => r.label), ["invoice-2024.pdf", "proton-invoice.pdf"])
 })
 
-test("fileRows ranks a visible path ahead of one with a hidden segment", () => {
-  const stdout = "/home/ks/.config/notes.txt\n/home/ks/Notes/notes.txt\n"
-  const rows = F.fileRows(stdout, HOME, "notes")
-  assert.deepEqual(rows.map(r => r.detail), ["Notes/notes.txt", ".config/notes.txt"])
-})
-
-test("fileRows ranks a shallower path ahead of a deeper one, prefix and hidden tied", () => {
+test("fileRows ranks a shallower path ahead of a deeper one, prefix tied", () => {
   const stdout = "/home/ks/a/b/c/notes.txt\n/home/ks/notes.txt\n"
   const rows = F.fileRows(stdout, HOME, "notes")
   assert.deepEqual(rows.map(r => r.detail), ["notes.txt", "a/b/c/notes.txt"])
 })
 
-test("fileRows falls back to alphabetical once prefix, hidden and depth all tie", () => {
+test("fileRows falls back to alphabetical once prefix and depth tie", () => {
   const stdout = "/home/ks/zeta.txt\n/home/ks/alpha.txt\n"
   const rows = F.fileRows(stdout, HOME, "")
   assert.deepEqual(rows.map(r => r.label), ["alpha.txt", "zeta.txt"])
@@ -117,4 +111,12 @@ test("fileRows keeps fzf's order when asked", () => {
 
 test("image thumbnails escape # and ?", () => {
   assert.equal(F.fileRow("/home/ks/p #2?.png", HOME).appIcon, "file:///home/ks/p%20%232%3F.png")
+})
+
+test("a query with a slash matches against the full path, since fd rejects it as a pattern", () => {
+  const args = F.fdArgs("docs/report", HOME)
+  assert.ok(args.includes("--full-path"))
+  assert.equal(args[args.length - 2], "docs/report")
+  assert.equal(F.fdArgs("invoice", HOME).includes("--full-path"), false)
+  assert.equal(F.fdArgs("docs report", HOME).includes("--full-path"), false)
 })

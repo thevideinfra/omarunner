@@ -7,15 +7,20 @@ function claims(query) { return /^kill\s+\S/i.test(String(query || "").trim()) }
 function filter(query) { return claims(query) ? String(query).trim().slice(4).trim() : "" }
 
 // Every process of the current user, with or without a terminal.
-function psArgs() { return ["ps", "-x", "-o", "pid=,comm=,args="] }
+// comm is a fixed 15-character column: it can hold spaces ("Web Content"), so
+// it is read by width, not by splitting on whitespace.
+function psArgs() { return ["ps", "-x", "-o", "pid=,comm:15=,args="] }
 
 function parsePs(stdoutText) {
   var lines = String(stdoutText || "").split("\n")
   var out = []
   for (var i = 0; i < lines.length; i++) {
-    var match = /^\s*(\d+)\s+(\S+)\s*(.*)$/.exec(lines[i])
-    if (!match || match[2] === "ps") continue
-    out.push({ pid: match[1], name: match[2], args: match[3] || match[2] })
+    var match = /^\s*(\d+) (.{15}) (.*)$/.exec(lines[i])
+    if (!match) continue
+    var name = match[2].trim()
+    // Zombies cannot be killed (they are already dead); ps itself is noise.
+    if (!name || name === "ps" || /<defunct>\s*$/.test(match[3])) continue
+    out.push({ pid: match[1], name: name, args: match[3].trim() || name })
   }
   return out
 }

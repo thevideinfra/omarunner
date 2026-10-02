@@ -6,6 +6,7 @@
 function listArgs() {
   return ["sh", "-c",
     "fd --type d --max-depth 2 --color never . \"$HOME\"; " +
+    "printf '%s\\n' \"$HOME/.config\"; " +
     "fd --type d --max-depth 1 --hidden --color never . \"$HOME/.config\"; " +
     "find / -mindepth 1 -maxdepth 1 -type d 2>/dev/null"]
 }

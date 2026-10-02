@@ -16,7 +16,9 @@ function row(cmd) {
 }
 
 function terminalArgv(cmd) {
-  return cmd ? ["omarchy-launch-terminal", "bash", "-lc", cmd + "; exec bash"] : []
+  // A newline, not "; ": a command ending in "&" or a "#" comment would
+  // otherwise break or swallow the "exec bash" that keeps the terminal open.
+  return cmd ? ["omarchy-launch-terminal", "bash", "-lc", cmd + "\nexec bash"] : []
 }
 
 function backgroundArgv(cmd) { return cmd ? ["bash", "-lc", cmd] : [] }
