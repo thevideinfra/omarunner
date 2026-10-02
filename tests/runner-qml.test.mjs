@@ -339,3 +339,9 @@ test("the chevron's space is reserved on every row so Ctrl+N hints line up", () 
   assert.ok(qml.includes('visible: row.kind !== "source-toggle"'))
   assert.ok(qml.includes('opacity: row.kind === "menu" || row.kind === "link" ? 0.36 : 0'))
 })
+
+test("edge padding is tight: card inset 4, row insets 4 left and 6 right", () => {
+  assert.ok(qml.includes("property int contentMargin: Style.space(4)"))
+  assert.ok(qml.includes("root.rowReservedBorderRight + Style.space(6)"))
+  assert.ok(qml.includes("root.rowReservedBorderLeft + Style.space(4)"))
+})

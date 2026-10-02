@@ -105,7 +105,7 @@ Item {
   readonly property real rowReservedBorderRight: Border.right(selectedBorderSpec)
   // Settings → Corner radius; -1 keeps the theme's radius.
   readonly property int cornerRadius: root.settings.radius >= 0 ? Style.space(root.settings.radius) : Style.cornerRadius
-  property int contentMargin: Style.space(8)
+  property int contentMargin: Style.space(4)
   property int headerHeight: Math.max(Style.space(28), root.fontHeading + Style.space(8))
   property int contentSpacing: Style.space(4)
   // KRunner-style compact rows: label and detail share one line, so every
@@ -1480,7 +1480,7 @@ Item {
                   horizontalAlignment: Text.AlignHCenter
                   verticalAlignment: Text.AlignVCenter
                   anchors.left: parent.left
-                  anchors.leftMargin: root.rowReservedBorderLeft + Style.space(6)
+                  anchors.leftMargin: root.rowReservedBorderLeft + Style.space(4)
                   anchors.verticalCenter: parent.verticalCenter
                 }
 
@@ -1498,7 +1498,7 @@ Item {
                         : row.kind === "source" ? (row.appIcon ? row.appIcon : Quickshell.iconPath(row.icon, true)) : ""
                   asynchronous: true
                   anchors.left: parent.left
-                  anchors.leftMargin: root.rowReservedBorderLeft + Style.space(6) + (Style.space(28) - width) / 2
+                  anchors.leftMargin: root.rowReservedBorderLeft + Style.space(4) + (Style.space(28) - width) / 2
                   anchors.verticalCenter: parent.verticalCenter
                 }
 
@@ -1507,7 +1507,7 @@ Item {
                 Item {
                   id: contentLine
                   anchors.left: row.hasIcon ? iconText.right : parent.left
-                  anchors.leftMargin: row.hasIcon ? Style.space(8) : root.rowReservedBorderLeft + Style.space(14)
+                  anchors.leftMargin: row.hasIcon ? Style.space(8) : root.rowReservedBorderLeft + Style.space(10)
                   anchors.right: trail.left
                   anchors.rightMargin: Style.space(8)
                   anchors.verticalCenter: parent.verticalCenter
@@ -1571,7 +1571,7 @@ Item {
                 Row {
                   id: trail
                   anchors.right: parent.right
-                  anchors.rightMargin: root.rowReservedBorderRight + Style.space(10)
+                  anchors.rightMargin: root.rowReservedBorderRight + Style.space(6)
                   anchors.verticalCenter: parent.verticalCenter
                   spacing: Style.space(8)
 
