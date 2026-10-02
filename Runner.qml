@@ -171,6 +171,39 @@ Item {
     }
   }
 
+  // ON / OFF pill: accent-tinted with accent text when on, dim when off.
+  component StateBadge: Item {
+    id: badge
+    property bool on: false
+    property color textColor: root.foreground
+
+    implicitWidth: badgeText.implicitWidth + Style.space(12)
+    implicitHeight: badgeText.implicitHeight + Style.space(4)
+    width: implicitWidth
+    height: implicitHeight
+
+    Rectangle {
+      anchors.fill: parent
+      radius: Style.space(5)
+      color: badge.on ? Util.alpha(Color.accent, 0.18) : Util.alpha(badge.textColor, 0.07)
+      border.width: 1
+      border.color: badge.on ? Color.accent : Util.alpha(badge.textColor, 0.2)
+
+      Text {
+        id: badgeText
+        anchors.centerIn: parent
+        textFormat: Text.PlainText
+        text: badge.on ? "ON" : "OFF"
+        color: badge.on ? Color.accent : badge.textColor
+        opacity: badge.on ? 1 : 0.55
+        font.family: root.textFamily
+        font.pixelSize: root.fontCaption
+        font.bold: true
+        font.letterSpacing: 0.8
+      }
+    }
+  }
+
   // Radio dot for one-of-many choices: an accent ring and dot when chosen.
   component RadioDot: Item {
     id: dot
@@ -1516,6 +1549,15 @@ Item {
                     elide: Text.ElideRight
                   }
 
+                  StateBadge {
+                    visible: row.kind === "setting-toggle"
+                    on: root.checkedResults[row.itemId] === true
+                    textColor: row.textColor
+                    anchors.left: labelText.right
+                    anchors.leftMargin: Style.space(10)
+                    anchors.verticalCenter: labelText.verticalCenter
+                  }
+
                   Rectangle {
                     id: hintRule
                     visible: row.kind === "source-toggle" && row.detail.length > 0
@@ -1566,9 +1608,10 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                   }
 
-                  // On/off state of a Sources or Settings toggle.
+                  // On/off state of a Sources toggle. (Settings mixes toggles with
+                  // choices, so its toggles show an ON/OFF badge after the name.)
                   AccentSwitch {
-                    visible: row.kind === "source-toggle" || row.kind === "setting-toggle"
+                    visible: row.kind === "source-toggle"
                     checked: root.checkedResults[row.itemId] === true
                     textColor: row.textColor
                     anchors.verticalCenter: parent.verticalCenter

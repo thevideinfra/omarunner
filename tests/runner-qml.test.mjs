@@ -325,7 +325,13 @@ test("Sources and Settings rows show switches and radio dots, driven by checkedR
   assert.match(qml, /component AccentSwitch: Item/)
   assert.match(qml, /component RadioDot: Item/)
   assert.ok(qml.includes("Color.accent"))
-  assert.ok(qml.includes('row.kind === "source-toggle" || row.kind === "setting-toggle"'))
+  assert.ok(qml.includes('visible: row.kind === "source-toggle"\n'))
   assert.ok(qml.includes('row.kind === "setting-option" || row.kind === "setting-custom"'))
   assert.ok(qml.includes("root.checkedResults[row.itemId] === true"))
+})
+
+test("Settings toggles show an ON/OFF badge after the name, not a switch", () => {
+  assert.match(qml, /component StateBadge: Item/)
+  assert.match(qml, /StateBadge \{\s*visible: row\.kind === "setting-toggle"/)
+  assert.equal(qml.includes('row.kind === "source-toggle" || row.kind === "setting-toggle"'), false)
 })
