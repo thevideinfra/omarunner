@@ -320,3 +320,12 @@ test("the Settings and Sources pages are labelled as omarunner's own", () => {
   assert.ok(qml.includes('label: "Omarunner Settings",\n      title: "Omarunner Settings"'))
   assert.ok(qml.includes('label: "Omarunner Sources",\n      title: "Omarunner Sources"'))
 })
+
+test("Sources and Settings rows show switches and radio dots, driven by checkedResults", () => {
+  assert.match(qml, /component AccentSwitch: Item/)
+  assert.match(qml, /component RadioDot: Item/)
+  assert.ok(qml.includes("Color.accent"))
+  assert.ok(qml.includes('row.kind === "source-toggle" || row.kind === "setting-toggle"'))
+  assert.ok(qml.includes('row.kind === "setting-option" || row.kind === "setting-custom"'))
+  assert.ok(qml.includes("root.checkedResults[row.itemId] === true"))
+})

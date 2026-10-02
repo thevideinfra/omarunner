@@ -413,3 +413,16 @@ test("searching a config page keeps each row's own hint as the detail", () => {
   const r = RunnerModel.buildRows(items, itemOrder, {}, {}, "sources", "files")
   assert.equal(r.rows[0].detail, "Files in your home folder by name")
 })
+
+// -- Sources and Settings pages show state with switches, not a ✓ in the label.
+
+test("config rows carry no check mark in their label; other checked rows keep it", () => {
+  const { items, itemOrder } = sourcesFixture()
+  const checked = { "sources.files": true }
+  const page = RunnerModel.buildRows(items, itemOrder, {}, checked, "sources", "")
+  assert.deepEqual(page.rows.map(r => r.label), ["Files"])
+  const menu = RunnerModel.parseMenuJsonc(`{ "root": { "label": "Omarchy" }, "theme": { "label": "Dark", "action": "x", "checked": "guard" } }`)
+  const merged = RunnerModel.mergeMenuSources(menu, [])
+  const rows = RunnerModel.buildRows(merged.items, merged.itemOrder, {}, { theme: true }, "root", "dark").rows
+  assert.equal(rows[0].label, "Dark ✓")
+})

@@ -137,6 +137,69 @@ Item {
   property int visibleRowsHeight: root.collapsed ? 0 : rowListHeight(layoutSerial, displayModel.count, filterText, searchDivider)
   property int cardHeight: Math.min(contentMargin * 2 + headerHeight + (root.collapsed ? 0 : contentSpacing + visibleRowsHeight), panel.height - Style.gapsOut * 2)
 
+  // On/off switch in the theme accent, as in Tandem and omaudiopanel: tinted
+  // accent track and accent knob when on, a dim neutral track when off.
+  // Presentation only; the row owns the click.
+  component AccentSwitch: Item {
+    id: sw
+    property bool checked: false
+    property color textColor: root.foreground
+
+    implicitWidth: Style.space(34)
+    implicitHeight: Style.space(18)
+    width: implicitWidth
+    height: implicitHeight
+
+    Rectangle {
+      anchors.fill: parent
+      radius: height / 2
+      color: sw.checked ? Util.alpha(Color.accent, 0.3) : Util.alpha(sw.textColor, 0.1)
+      border.width: 1
+      border.color: sw.checked ? Color.accent : Util.alpha(sw.textColor, 0.25)
+      Behavior on color { ColorAnimation { duration: 120 } }
+
+      Rectangle {
+        width: parent.height - Style.space(6)
+        height: width
+        radius: width / 2
+        anchors.verticalCenter: parent.verticalCenter
+        x: sw.checked ? parent.width - width - Style.space(3) : Style.space(3)
+        color: sw.checked ? Color.accent : Qt.darker(sw.textColor, 1.4)
+        Behavior on x { NumberAnimation { duration: 120 } }
+        Behavior on color { ColorAnimation { duration: 120 } }
+      }
+    }
+  }
+
+  // Radio dot for one-of-many choices: an accent ring and dot when chosen.
+  component RadioDot: Item {
+    id: dot
+    property bool checked: false
+    property color textColor: root.foreground
+
+    implicitWidth: Style.space(16)
+    implicitHeight: Style.space(16)
+    width: implicitWidth
+    height: implicitHeight
+
+    Rectangle {
+      anchors.fill: parent
+      radius: width / 2
+      color: "transparent"
+      border.width: dot.checked ? 2 : 1
+      border.color: dot.checked ? Color.accent : Util.alpha(dot.textColor, 0.35)
+
+      Rectangle {
+        anchors.centerIn: parent
+        width: parent.width - Style.space(8)
+        height: width
+        radius: width / 2
+        visible: dot.checked
+        color: Color.accent
+      }
+    }
+  }
+
   function runAction(action) {
     var command = String(action || "")
     if (!command) return
@@ -1500,6 +1563,22 @@ Item {
                     opacity: 0.45
                     font.family: root.textFamily
                     font.pixelSize: root.fontHint
+                    anchors.verticalCenter: parent.verticalCenter
+                  }
+
+                  // On/off state of a Sources or Settings toggle.
+                  AccentSwitch {
+                    visible: row.kind === "source-toggle" || row.kind === "setting-toggle"
+                    checked: root.checkedResults[row.itemId] === true
+                    textColor: row.textColor
+                    anchors.verticalCenter: parent.verticalCenter
+                  }
+
+                  // The chosen preset on a setting's page (and its Custom… row).
+                  RadioDot {
+                    visible: row.kind === "setting-option" || row.kind === "setting-custom"
+                    checked: root.checkedResults[row.itemId] === true
+                    textColor: row.textColor
                     anchors.verticalCenter: parent.verticalCenter
                   }
 

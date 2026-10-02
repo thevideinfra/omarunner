@@ -272,6 +272,9 @@ function isVisible(items, itemOrder, whenResults, entry, depth) {
 
 function labelFor(entry, checkedResults) {
   if (!entry) return ""
+  // Sources and Settings rows show their state as a switch or radio dot in
+  // the row, not as a check mark in the label.
+  if (isConfigRow(entry)) return entry.label
   if (entry.checked && checkedResults && checkedResults[entry.id]) return entry.label + " ✓"
   return entry.label
 }
