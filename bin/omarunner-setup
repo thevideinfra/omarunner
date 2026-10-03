@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# Set up the omarunner keybindings: ask which keys, save them in
+# ~/.config/omarchy/omarunner.json, then hand off to omarunner-apply to write
+# the Hyprland config.
+#
+# Scripted use (no prompts):
+#   omarunner-setup --yes [--launcher "SUPER + SPACE"] [--apps "SUPER + ALT + SPACE"|none]
+set -euo pipefail
+
+HERE="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+CONFIG="${OMARUNNER_CONFIG:-$HOME/.config/omarchy/omarunner.json}"
+
+command -v jq >/dev/null || { echo "omarunner-setup: jq is required" >&2; exit 1; }
+
+launcher="" apps="" yes=false
+while (( $# > 0 )); do
+  case "$1" in
+    --yes | -y) yes=true; shift ;;
+    --launcher) launcher="${2:-}"; shift 2 ;;
+    --apps) apps="${2:-}"; shift 2 ;;
+    -h | --help)
+      echo 'Usage: omarunner-setup [--yes] [--launcher "SUPER + SPACE"] [--apps "SUPER + ALT + SPACE"|none]'
+      exit 0 ;;
+    *) echo "omarunner-setup: unknown option: $1" >&2; exit 2 ;;
+  esac
+done
+
+if [[ -f $CONFIG ]]; then
+  jq -e 'type == "object"' "$CONFIG" >/dev/null 2>&1 \
+    || { echo "omarunner-setup: $CONFIG is not valid JSON; fix or remove it first" >&2; exit 1; }
+fi
+
+current() {
+  [[ -f $CONFIG ]] || { echo "$2"; return; }
+  jq -r --arg k "$1" --arg d "$2" '.keys // {} | if has($k) and .[$k] != null then .[$k] else $d end' "$CONFIG"
+}
+
+if [[ $yes == false ]]; then
+  command -v gum >/dev/null || { echo "omarunner-setup: gum is required (or use --yes)" >&2; exit 1; }
+  echo "omarunner keybindings"
+  echo
+  echo "SUPER + SPACE replaces Omarchy's menu key. The bar's Omarchy button and"
+  echo "SUPER + CTRL + SPACE still open the Omarchy menu."
+  echo
+  launcher=$(gum input --header "Key that opens omarunner" --value "$(current launcher 'SUPER + SPACE')")
+  [[ -n $launcher ]] || { echo "omarunner-setup: key cannot be empty" >&2; exit 1; }
+  if gum confirm --default=yes "Also bind a key that opens it on the Apps list?"; then
+    default_apps=$(current apps 'SUPER + ALT + SPACE'); [[ $default_apps == none ]] && default_apps='SUPER + ALT + SPACE'
+    apps=$(gum input --header "Key for the Apps list" --value "$default_apps")
+    [[ -n $apps ]] || apps=none
+  else
+    apps=none
+  fi
+fi
+
+[[ -n $launcher ]] || launcher=$(current launcher 'SUPER + SPACE')
+[[ -n $apps ]] || apps=$(current apps 'SUPER + ALT + SPACE')
+
+# ---- save -------------------------------------------------------------------
+mkdir -p "$(dirname "$CONFIG")"
+[[ -f $CONFIG ]] || echo '{}' >"$CONFIG"
+tmp=$(mktemp)
+jq --arg l "$launcher" --arg a "$apps" '.keys = { launcher: $l, apps: $a }' "$CONFIG" >"$tmp"
+mv "$tmp" "$CONFIG"
+echo "Saved the keys to $CONFIG"
+echo
+
+exec "$HERE/omarunner-apply"

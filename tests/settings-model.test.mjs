@@ -149,3 +149,17 @@ test("width presets start at the custom minimum: Narrow 300 up to Extra wide 680
   assert.equal(S.resolve({ settings: { width: 600 } }).width, 600)
   assert.equal(S.currentLabel("width", 600), "Custom (600)")
 })
+
+test("the Settings page offers a Keybindings… row that runs the setup command", () => {
+  const cmd = "omarchy-launch-floating-terminal-with-presentation /x/omarunner-setup"
+  const page = S.pageRows(S.defaults(), cmd)
+  const row = page.rows.find(r => r.id === "omarunner-settings.keys")
+  assert.equal(row.label, "Keybindings…")
+  assert.equal(row.kind, "action")
+  assert.equal(row.action, cmd)
+  assert.equal(row.parent, "omarunner-settings")
+  // Alphabetical among the top-level entries, between Hint size and Opacity.
+  const top = page.rows.filter(r => r.parent === "omarunner-settings").map(r => r.label.split(" · ")[0].replace("…", ""))
+  assert.deepEqual(top, [...top].sort((a, b) => a.localeCompare(b)))
+  assert.equal(S.pageRows(S.defaults()).rows.some(r => r.id === "omarunner-settings.keys"), false)
+})

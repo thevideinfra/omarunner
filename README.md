@@ -57,7 +57,12 @@ omarchy plugin add https://github.com/thevideinfra/omarunner.git --enable
 ```
 
 This clones the plugin into `~/.config/omarchy/plugins/videinfra.omarunner`,
-validates it and enables it. Then bind it to a key (below).
+validates it and enables it. Then run the setup wizard to choose its keys
+(below):
+
+```bash
+~/.config/omarchy/plugins/videinfra.omarunner/bin/omarunner setup
+```
 
 Optional packages:
 
@@ -78,7 +83,27 @@ omarchy plugin update videinfra.omarunner
 
 ## Keybindings
 
-Add these to `~/.config/hypr/bindings.lua`, then run `hyprctl reload`:
+A plugin cannot declare keys itself, so omarunner ships a setup step like
+Tandem's:
+
+```bash
+~/.config/omarchy/plugins/videinfra.omarunner/bin/omarunner setup
+```
+
+It asks which key opens omarunner (default `SUPER + SPACE`, which replaces
+Omarchy's menu key) and whether to bind a second key for the Apps list
+(`SUPER + ALT + SPACE`), saves the answers under `keys` in
+`~/.config/omarchy/omarunner.json`, generates `omarunner.lua` in the plugin
+folder, adds one `pcall(dofile, …)` line to `~/.config/hypr/hyprland.lua` (backed
+up first, harmless if the plugin is removed) and reloads Hyprland. Re-run it any
+time, or use **Keybindings…** on the Omarunner Settings page. The bar's Omarchy
+button and `SUPER + CTRL + SPACE` keep opening the Omarchy menu.
+
+For scripts: `omarunner setup --yes --launcher "SUPER + R" --apps none`, and
+`omarunner apply` to regenerate from `omarunner.json`.
+
+Prefer to write the binds yourself? Add these to `~/.config/hypr/bindings.lua`
+instead, then run `hyprctl reload`:
 
 ```lua
 -- omarunner replaces the Omarchy root menu on SUPER+SPACE (was: Omarchy menu).
@@ -111,15 +136,18 @@ ln -s ~/.config/omarchy/plugins/videinfra.omarunner/bin/omarunner ~/.local/bin/o
 
 ## Uninstallation
 
+Take the keys out first, then remove the plugin:
+
 ```bash
+~/.config/omarchy/plugins/videinfra.omarunner/bin/omarunner apply --remove
 omarchy plugin remove videinfra.omarunner
 ```
 
-Then remove the lines added to `~/.config/hypr/bindings.lua` above (the `local`
-line, the two `hl.unbind` lines and the two `o.bind` lines) and run
-`hyprctl reload`. Leaving the `hl.unbind` lines in place suppresses the Omarchy
-defaults for `SUPER + SPACE` and `SUPER + ALT + SPACE` without restoring
-anything. Remove the `~/.local/bin/omarunner` link too if you made one.
+`apply --remove` deletes the loader line from `hyprland.lua` and the generated
+`omarunner.lua`, then reloads Hyprland, which restores Omarchy's own keys. If
+you wrote the binds by hand instead, remove those lines from `bindings.lua`
+(the `local` line, the `hl.unbind` lines and the `o.bind` lines) and run
+`hyprctl reload`. Remove the `~/.local/bin/omarunner` link too if you made one.
 
 ## Development
 

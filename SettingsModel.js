@@ -159,7 +159,9 @@ function menuRow(id, parent, label, order) {
 // value), one toggle row per switch. `checked` maps row id -> ✓.
 // Page entries are alphabetical by name; a submenu's choices keep their
 // preset order (Narrow, Normal, Wide...).
-function pageRows(settingsIn) {
+// setupCommand: shell command that opens the keybinding wizard; when given,
+// a "Keybindings…" row runs it.
+function pageRows(settingsIn, setupCommand) {
   var settings = settingsIn || defaults()
   var entries = []
   var checked = ({})
@@ -191,6 +193,11 @@ function pageRows(settingsIn) {
       iconFont: "", label: toggles[t].label, title: "", target: "", description: "", action: "", provider: "",
       aliases: [], when: "", checked: "config", value: toggles[t].key, order: 0 }] })
     checked[toggleId] = settings[toggles[t].key] === true
+  }
+  if (setupCommand) {
+    entries.push({ name: "Keybindings", rows: [{ id: PAGE_ID() + ".keys", parent: PAGE_ID(), kind: "action", icon: "",
+      iconFont: "", label: "Keybindings…", title: "", target: "", description: "Choose the keys that open omarunner",
+      action: setupCommand, provider: "", aliases: [], when: "", checked: "", order: 0 }] })
   }
   entries.sort(function(a, b) { return a.name.localeCompare(b.name) })
   var rows = []

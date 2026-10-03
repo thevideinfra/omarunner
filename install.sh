@@ -51,3 +51,4 @@ else
 fi
 
 echo "Restart the shell to load the plugin: omarchy-restart-shell"
+echo "Then choose its keys: omarunner setup"

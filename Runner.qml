@@ -705,7 +705,10 @@ Item {
     order.push("omarunner-settings")
     // Resolved here, not via root.settings: this runs from onConfigChanged at
     // startup, before that binding has a value.
-    var page = SettingsModel.pageRows(SettingsModel.resolve(sourceConfig.config))
+    // "Keybindings…" opens the setup wizard in a floating terminal.
+    var setup = Quickshell.env("HOME") + "/.config/omarchy/plugins/videinfra.omarunner/bin/omarunner-setup"
+    var page = SettingsModel.pageRows(SettingsModel.resolve(sourceConfig.config),
+      "omarchy-launch-floating-terminal-with-presentation " + Util.shellQuote(setup))
     for (var p = 0; p < page.rows.length; p++) {
       page.rows[p].order = order.length
       items[page.rows[p].id] = page.rows[p]

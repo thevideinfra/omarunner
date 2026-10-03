@@ -8,6 +8,9 @@ TARGET_DIR="$HOME/.config/omarchy/plugins/$PLUGIN_ID"
 SHELL_CONFIG="$HOME/.config/omarchy/shell.json"
 BIN_LINK="$HOME/.local/bin/omarunner"
 
+# Take the keybinding loader out of hyprland.lua (a no-op if it was never added).
+"$SOURCE_DIR/bin/omarunner-apply" --remove || true
+
 if [[ -f $SHELL_CONFIG ]]; then
   backup="$SHELL_CONFIG.bak.$(date +%s)"
   cp "$SHELL_CONFIG" "$backup"

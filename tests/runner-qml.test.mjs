@@ -239,7 +239,7 @@ test("layout values come from the resolved settings", () => {
 })
 
 test("the Settings page is injected and its rows write the config", () => {
-  assert.ok(qml.includes("SettingsModel.pageRows(SettingsModel.resolve(sourceConfig.config))"))
+  assert.ok(qml.includes("SettingsModel.pageRows(SettingsModel.resolve(sourceConfig.config),"))
   assert.ok(qml.includes("sourceConfig.apply(SettingsModel.applyOption(sourceConfig.config, row.value))"))
   assert.ok(qml.includes("sourceConfig.apply(SettingsModel.toggled(sourceConfig.config, row.value))"))
 })
@@ -344,4 +344,9 @@ test("edge padding is tight: card inset 4, row insets 4 left and 6 right", () =>
   assert.ok(qml.includes("property int contentMargin: Style.space(4)"))
   assert.ok(qml.includes("root.rowReservedBorderRight + Style.space(6)"))
   assert.ok(qml.includes("root.rowReservedBorderLeft + Style.space(4)"))
+})
+
+test("the Settings page passes the keybinding wizard command to its Keybindings… row", () => {
+  assert.ok(qml.includes("omarchy-launch-floating-terminal-with-presentation \" + Util.shellQuote(setup)"))
+  assert.ok(qml.includes("videinfra.omarunner/bin/omarunner-setup"))
 })

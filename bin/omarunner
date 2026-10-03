@@ -23,6 +23,12 @@ case "$verb" in
   close)
     exec omarchy-shell shell hide "$PLUGIN_ID"
     ;;
+  setup)
+    exec "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/omarunner-setup" "${@:2}"
+    ;;
+  apply)
+    exec "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/omarunner-apply" "${@:2}"
+    ;;
   refresh | ping)
     exec omarchy-shell shell call "$PLUGIN_ID" "$verb" "{}"
     ;;
@@ -36,6 +42,9 @@ Verbs:
   close            Close omarunner if it is visible.
   refresh          Re-parse the menu JSONC files.
   ping             Health check.
+  setup            Choose the keys that open omarunner and write the Hyprland
+                   binds (interactive; see omarunner-setup --help).
+  apply [--remove] Re-write the binds from omarunner.json, or take them out.
 
 Route is an item id (e.g. setup.power) or alias (e.g. power). Defaults to
 "root", which opens the bare search line.
