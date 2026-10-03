@@ -153,16 +153,28 @@ you wrote the binds by hand instead, remove those lines from `bindings.lua`
 
 ## Development
 
-For working on omarunner, link a checkout instead of installing a copy:
+Clone the repo wherever you like and install it from the clone, like any other
+user would, so you test what users get:
 
 ```bash
 git clone https://github.com/thevideinfra/omarunner.git ~/Projects/omarunner
-cd ~/Projects/omarunner
-./install.sh          # symlinks the checkout as the plugin, enables it,
-omarchy-restart-shell # links the CLI, and names missing optional packages
+omarchy plugin add ~/Projects/omarunner --enable
 ```
 
-`./uninstall.sh` undoes it.
+To try a change, commit it in the clone, update the installed copy from it and
+restart the shell. The update pulls from the plugin's origin, which is your
+clone, so uncommitted edits do not reach the installed plugin:
+
+```bash
+cd ~/Projects/omarunner && git commit -am "..."
+omarchy plugin update videinfra.omarunner
+omarchy-restart-shell
+```
+
+Prefer a live link instead? `./install.sh` symlinks the checkout as the plugin,
+enables it, links the CLI and names missing optional packages (`./uninstall.sh`
+undoes it). A symlinked plugin edits in place, but still needs
+`omarchy-restart-shell` after QML changes, since it does not hot reload.
 
 Run the unit tests with `npm test`. They cover the pure logic of every source
 (`*Model.js`), row building and grouping in `RunnerModel.js`, the settings model,
@@ -174,12 +186,6 @@ A search source is a QML file exposing `sourceId`, `groupLabel`, `hint`,
 source), `leading` (rows above the menu groups) or `fallback` (rows only when
 nothing else matched). Add the instance to `root.sources` in `Runner.qml`; the
 Sources page picks it up from there.
-
-A symlinked plugin does not hot reload, so restart the shell after editing QML:
-
-```bash
-omarchy-restart-shell
-```
 
 `bin/omarunner-diff-upstream` compares the installed first-party menu plugin
 against the vendored baseline in `upstream/`, which is how drift after an Omarchy
