@@ -81,6 +81,11 @@ sudo pacman -S libqalculate fzf
 omarchy plugin update videinfra.omarunner
 ```
 
+The keybindings survive an update. If you ever remove and re-add the plugin,
+run `omarunner-apply` once to regenerate them: your keys are kept in
+`~/.config/omarchy/omarunner.json`, but the generated `omarunner.lua` lives in
+the plugin folder and goes with it.
+
 ## Keybindings
 
 A plugin cannot declare keys itself, so omarunner ships a setup step like
@@ -171,10 +176,11 @@ omarchy plugin update videinfra.omarunner
 omarchy-restart-shell
 ```
 
-Prefer a live link instead? `./install.sh` symlinks the checkout as the plugin,
-enables it, links the CLI and names missing optional packages (`./uninstall.sh`
-undoes it). A symlinked plugin edits in place, but still needs
-`omarchy-restart-shell` after QML changes, since it does not hot reload.
+`./install.sh` and `./uninstall.sh` still symlink a checkout as the plugin, but
+that gains nothing: a symlinked plugin does not hot reload either, so
+`omarchy-restart-shell` is needed after QML changes in both setups. It also
+puts your repo inside the plugins folder, where a tool that deletes through the
+link can damage it. Install from the clone as above.
 
 Run the unit tests with `npm test`. They cover the pure logic of every source
 (`*Model.js`), row building and grouping in `RunnerModel.js`, the settings model,
