@@ -50,21 +50,19 @@ Omarchy theme with no configuration.
 
 ## Installation
 
-omarunner is a standard Omarchy shell plugin:
+omarunner is a standard Omarchy shell plugin. Add it, then run the setup step
+to choose its keys:
 
 ```bash
 omarchy plugin add https://github.com/thevideinfra/omarunner.git --enable
-```
-
-This clones the plugin into `~/.config/omarchy/plugins/videinfra.omarunner`,
-validates it and enables it. Then run the setup wizard to choose its keys
-(below):
-
-```bash
 ~/.config/omarchy/plugins/videinfra.omarunner/bin/omarunner-setup
 ```
 
-Optional packages:
+The first command clones the plugin into
+`~/.config/omarchy/plugins/videinfra.omarunner`, validates it and enables it. The
+second asks for the keys (see Keybindings below).
+
+Optional packages (the setup step names any that are missing):
 
 - `libqalculate` (provides `qalc`): unit, currency and function support in the
   calculator. Plain arithmetic works without it.
@@ -81,15 +79,14 @@ sudo pacman -S libqalculate fzf
 omarchy plugin update videinfra.omarunner
 ```
 
-The keybindings survive an update. If you ever remove and re-add the plugin,
-run `omarunner-apply` once to regenerate them: your keys are kept in
-`~/.config/omarchy/omarunner.json`, but the generated `omarunner.lua` lives in
-the plugin folder and goes with it.
+Your keybindings survive an update. If you ever remove and re-add the plugin,
+run `omarunner-setup` or `omarunner-apply` once to regenerate them: your keys are
+kept in `~/.config/omarchy/omarunner.json`, but the generated `omarunner.lua`
+lives in the plugin folder and goes with it.
 
 ## Keybindings
 
-A plugin cannot declare keys itself, so omarunner ships a setup step like
-Tandem's:
+A plugin cannot declare keys itself, so omarunner has a setup step:
 
 ```bash
 ~/.config/omarchy/plugins/videinfra.omarunner/bin/omarunner-setup
@@ -97,17 +94,22 @@ Tandem's:
 
 It asks which key opens omarunner (default `SUPER + SPACE`, which replaces
 Omarchy's menu key) and whether to bind a second key for the Apps list
-(`SUPER + ALT + SPACE`), saves the answers under `keys` in
-`~/.config/omarchy/omarunner.json`, generates `omarunner.lua` in the plugin
-folder, adds one `pcall(dofile, …)` line to `~/.config/hypr/hyprland.lua` (backed
-up first, harmless if the plugin is removed) and reloads Hyprland. Re-run it any
-time, or use **Keybindings…** on the Omarunner Settings page. The bar's Omarchy
-button and `SUPER + CTRL + SPACE` keep opening the Omarchy menu.
+(`SUPER + ALT + SPACE`). It then:
 
-For scripts: `omarunner-setup --yes --launcher "SUPER + R" --apps none`, and
-`omarunner-apply` to regenerate from `omarunner.json` (both live in the plugin's
-`bin/` folder; once `omarunner` is on your PATH, `omarunner setup` and
-`omarunner apply` do the same).
+- saves the answers under `keys` in `~/.config/omarchy/omarunner.json`;
+- generates `omarunner.lua` in the plugin folder and adds one `pcall(dofile, …)`
+  line to `~/.config/hypr/hyprland.lua` (backed up first, harmless if the plugin
+  is removed), then reloads Hyprland;
+- offers to put the `omarunner` command on your PATH (a link in
+  `~/.local/bin`), so you can run `omarunner toggle` from a terminal. The keys
+  themselves do not need it.
+
+Re-run it any time, or use **Keybindings…** on the Omarunner Settings page. The
+bar's Omarchy button and `SUPER + CTRL + SPACE` keep opening the Omarchy menu.
+
+For scripts: `omarunner-setup --yes --launcher "SUPER + R" --apps none` (add
+`--no-path` to skip the PATH link), and `omarunner-apply` to regenerate the binds
+from `omarunner.json`. Both live in the plugin's `bin/` folder.
 
 Prefer to write the binds yourself? Add these to `~/.config/hypr/bindings.lua`
 instead, then run `hyprctl reload`:
@@ -125,21 +127,16 @@ o.bind("SUPER + ALT + SPACE", "omarunner apps", omarunner .. " toggle apps")
 
 ## Usage
 
-`bin/omarunner` drives the plugin from a terminal or a keybinding:
+The `omarunner` command drives the plugin from a terminal or a keybinding:
 
 ```
-omarunner [toggle|summon|close|refresh|ping] [route]
+omarunner [toggle|summon|close|refresh|ping|setup|apply] [route]
 ```
 
 `toggle` is the default verb and `root` the default route. A route is a menu item
 id (`setup.power`) or an alias (`power`), the same routes `omarchy-menu` accepts,
-plus `sources` and `omarunner-settings` for omarunner's own pages.
-
-To have `omarunner` on your PATH:
-
-```bash
-ln -s ~/.config/omarchy/plugins/videinfra.omarunner/bin/omarunner ~/.local/bin/omarunner
-```
+plus `sources` and `omarunner-settings` for omarunner's own pages. `setup` and
+`apply` run `omarunner-setup` and `omarunner-apply`.
 
 ## Uninstallation
 
@@ -150,16 +147,16 @@ Take the keys out first, then remove the plugin:
 omarchy plugin remove videinfra.omarunner
 ```
 
-`apply --remove` deletes the loader line from `hyprland.lua` and the generated
-`omarunner.lua`, then reloads Hyprland, which restores Omarchy's own keys. If
-you wrote the binds by hand instead, remove those lines from `bindings.lua`
-(the `local` line, the `hl.unbind` lines and the `o.bind` lines) and run
-`hyprctl reload`. Remove the `~/.local/bin/omarunner` link too if you made one.
+`omarunner-apply --remove` deletes the loader line from `hyprland.lua`, the
+generated `omarunner.lua` and the PATH link, then reloads Hyprland, which
+restores Omarchy's own keys. If you wrote the binds by hand instead, remove those
+lines from `bindings.lua` (the `local` line, the `hl.unbind` lines and the
+`o.bind` lines) and run `hyprctl reload`.
 
 ## Development
 
-Clone the repo wherever you like and install it from the clone, like any other
-user would, so you test what users get:
+Clone the repo and install it from the clone, as a user would, so you test what
+users get:
 
 ```bash
 git clone https://github.com/thevideinfra/omarunner.git ~/Projects/omarunner
@@ -176,15 +173,11 @@ omarchy plugin update videinfra.omarunner
 omarchy-restart-shell
 ```
 
-`./install.sh` and `./uninstall.sh` still symlink a checkout as the plugin, but
-that gains nothing: a symlinked plugin does not hot reload either, so
-`omarchy-restart-shell` is needed after QML changes in both setups. It also
-puts your repo inside the plugins folder, where a tool that deletes through the
-link can damage it. Install from the clone as above.
+To undo a tried change, `git revert` it and update again.
 
 Run the unit tests with `npm test`. They cover the pure logic of every source
 (`*Model.js`), row building and grouping in `RunnerModel.js`, the settings model,
-the structure of the QML files, the CLI, and the installer and uninstaller.
+the keybinding scripts, the structure of the QML files and the CLI.
 
 A search source is a QML file exposing `sourceId`, `groupLabel`, `hint`,
 `maxRows`, `enabled`, `search(query, serial)`, `activate(value, modifiers)` and

@@ -11,6 +11,7 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+BIN_DIR="${OMARUNNER_BIN_DIR:-$HOME/.local/bin}"
 CONFIG="${OMARUNNER_CONFIG:-$HOME/.config/omarchy/omarunner.json}"
 HYPRLAND_LUA="${OMARUNNER_HYPRLAND_LUA:-$HOME/.config/hypr/hyprland.lua}"
 OUT="${OMARUNNER_LUA_OUT:-$HERE/omarunner.lua}"
@@ -34,7 +35,9 @@ reload() {
 }
 
 if [[ ${1:-} == --remove ]]; then
+  changed=false
   if [[ -f $HYPRLAND_LUA ]] && grep -qF "$MARKER" "$HYPRLAND_LUA"; then
+    changed=true
     cp "$HYPRLAND_LUA" "$HYPRLAND_LUA.bak.$(date +%s)"
     tmp=$(mktemp)
     # The loader line and the comment line above it.
@@ -42,8 +45,15 @@ if [[ ${1:-} == --remove ]]; then
     mv "$tmp" "$HYPRLAND_LUA"
     echo "omarunner-apply: removed the loader from $(basename "$HYPRLAND_LUA") (backed up first)"
   fi
+  [[ -f $OUT ]] && changed=true
   rm -f "$OUT"
-  reload
+  # The PATH link that omarunner-setup made; a different omarunner is left alone.
+  if [[ -L $BIN_DIR/omarunner && $(readlink "$BIN_DIR/omarunner") == "$HERE/bin/omarunner" ]]; then
+    rm -f "$BIN_DIR/omarunner"
+    echo "omarunner-apply: removed $BIN_DIR/omarunner"
+  fi
+  # Reload Hyprland only if its config actually changed.
+  [[ $changed == true ]] && reload
   exit 0
 fi
 

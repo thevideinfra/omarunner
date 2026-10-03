@@ -1,7 +1,7 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
 import { execFile, spawnSync } from "node:child_process"
-import { readFile, writeFile, mkdtemp, readdir, access } from "node:fs/promises"
+import { readFile, writeFile, mkdtemp, readdir, access, readlink, lstat, mkdir, symlink } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -22,7 +22,8 @@ async function sandbox(config) {
     HOME: dir,
     OMARUNNER_CONFIG: join(dir, "omarunner.json"),
     OMARUNNER_HYPRLAND_LUA: join(dir, "hyprland.lua"),
-    OMARUNNER_LUA_OUT: join(dir, "omarunner.lua")
+    OMARUNNER_LUA_OUT: join(dir, "omarunner.lua"),
+    OMARUNNER_BIN_DIR: join(dir, "bin")
   }
   if (config !== undefined) await writeFile(env.OMARUNNER_CONFIG, JSON.stringify(config))
   await writeFile(env.OMARUNNER_HYPRLAND_LUA, "-- user config\nhl.config({})\n")
@@ -112,4 +113,52 @@ test("the CLI offers setup and apply, and lists them in its help", async () => {
   assert.match(stdout, /apply/)
   const script = await read(cli)
   assert.ok(script.includes("omarunner-setup") && script.includes("omarunner-apply"))
+})
+
+// -- PATH link and optional packages.
+
+test("setup --yes puts omarunner on the PATH with a link into the plugin's bin", async () => {
+  const { env } = await sandbox()
+  await go(setup, ["--yes"], env)
+  assert.equal(await readlink(join(env.OMARUNNER_BIN_DIR, "omarunner")), cli)
+  await go(setup, ["--yes"], env) // re-running is fine
+  assert.equal(await readlink(join(env.OMARUNNER_BIN_DIR, "omarunner")), cli)
+})
+
+test("setup --no-path leaves the PATH alone, and never replaces someone else's omarunner", async () => {
+  const a = await sandbox()
+  await go(setup, ["--yes", "--no-path"], a.env)
+  await assert.rejects(lstat(join(a.env.OMARUNNER_BIN_DIR, "omarunner")))
+  const b = await sandbox()
+  await mkdir(b.env.OMARUNNER_BIN_DIR)
+  await writeFile(join(b.env.OMARUNNER_BIN_DIR, "omarunner"), "#!/bin/sh\n")
+  const { stdout } = await go(setup, ["--yes"], b.env)
+  assert.equal(await read(join(b.env.OMARUNNER_BIN_DIR, "omarunner")), "#!/bin/sh\n")
+  assert.match(stdout, /already exists/)
+})
+
+test("apply --remove removes the PATH link it made, and only that one", async () => {
+  const { env } = await sandbox()
+  await go(setup, ["--yes"], env)
+  await go(apply, ["--remove"], env)
+  await assert.rejects(lstat(join(env.OMARUNNER_BIN_DIR, "omarunner")))
+  const other = await sandbox()
+  await mkdir(other.env.OMARUNNER_BIN_DIR)
+  await symlink("/usr/bin/true", join(other.env.OMARUNNER_BIN_DIR, "omarunner"))
+  await go(apply, ["--remove"], other.env)
+  assert.equal(await readlink(join(other.env.OMARUNNER_BIN_DIR, "omarunner")), "/usr/bin/true")
+})
+
+test("setup names missing optional packages", async () => {
+  const { dir, env } = await sandbox()
+  const tools = join(dir, "tools")
+  await mkdir(tools)
+  for (const t of ["bash", "env", "jq", "dirname", "readlink", "mkdir", "ln", "cp", "mv", "mktemp", "date", "grep", "rm", "cat"]) {
+    const r = spawnSync("which", [t])
+    if (r.status === 0) await symlink(r.stdout.toString().trim(), join(tools, t))
+  }
+  const { stderr } = await go(setup, ["--yes"], { ...env, PATH: tools })
+  assert.match(stderr, /libqalculate \(qalc\)/)
+  assert.match(stderr, /fzf: fuzzy ranking/)
+  assert.match(stderr, /fd: file and folder search/)
 })

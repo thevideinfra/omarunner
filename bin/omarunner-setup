@@ -3,23 +3,29 @@
 # ~/.config/omarchy/omarunner.json, then hand off to omarunner-apply to write
 # the Hyprland config.
 #
+# Also puts `omarunner` on the PATH (a link in ~/.local/bin) so the CLI can be
+# typed in a terminal. The keybindings do not need it: they call the plugin's
+# own copy by full path.
+#
 # Scripted use (no prompts):
-#   omarunner-setup --yes [--launcher "SUPER + SPACE"] [--apps "SUPER + ALT + SPACE"|none]
+#   omarunner-setup --yes [--launcher "SUPER + SPACE"] [--apps "SUPER + ALT + SPACE"|none] [--no-path]
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 CONFIG="${OMARUNNER_CONFIG:-$HOME/.config/omarchy/omarunner.json}"
+BIN_DIR="${OMARUNNER_BIN_DIR:-$HOME/.local/bin}"
 
 command -v jq >/dev/null || { echo "omarunner-setup: jq is required" >&2; exit 1; }
 
-launcher="" apps="" yes=false
+launcher="" apps="" yes=false path=ask
 while (( $# > 0 )); do
   case "$1" in
     --yes | -y) yes=true; shift ;;
+    --no-path) path=no; shift ;;
     --launcher) launcher="${2:-}"; shift 2 ;;
     --apps) apps="${2:-}"; shift 2 ;;
     -h | --help)
-      echo 'Usage: omarunner-setup [--yes] [--launcher "SUPER + SPACE"] [--apps "SUPER + ALT + SPACE"|none]'
+      echo 'Usage: omarunner-setup [--yes] [--launcher "SUPER + SPACE"] [--apps "SUPER + ALT + SPACE"|none] [--no-path]'
       exit 0 ;;
     *) echo "omarunner-setup: unknown option: $1" >&2; exit 2 ;;
   esac
@@ -51,7 +57,11 @@ if [[ $yes == false ]]; then
   else
     apps=none
   fi
+  if [[ $path == ask ]]; then
+    if gum confirm --default=yes "Put the omarunner command on your PATH ($BIN_DIR/omarunner)?"; then path=yes; else path=no; fi
+  fi
 fi
+[[ $path == ask ]] && path=yes
 
 [[ -n $launcher ]] || launcher=$(current launcher 'SUPER + SPACE')
 [[ -n $apps ]] || apps=$(current apps 'SUPER + ALT + SPACE')
@@ -63,6 +73,32 @@ tmp=$(mktemp)
 jq --arg l "$launcher" --arg a "$apps" '.keys = { launcher: $l, apps: $a }' "$CONFIG" >"$tmp"
 mv "$tmp" "$CONFIG"
 echo "Saved the keys to $CONFIG"
+
+# ---- PATH link --------------------------------------------------------------
+if [[ $path == yes ]]; then
+  target="$HERE/omarunner"
+  link="$BIN_DIR/omarunner"
+  if [[ -L $link && $(readlink "$link") == "$target" ]]; then
+    echo "omarunner is already on your PATH ($link)"
+  elif [[ -e $link || -L $link ]]; then
+    echo "Not adding omarunner to your PATH: $link already exists"
+  else
+    mkdir -p "$BIN_DIR"
+    ln -s "$target" "$link"
+    echo "Put omarunner on your PATH: $link"
+  fi
+fi
+
+# ---- optional packages ------------------------------------------------------
+# omarunner runs without these, with the named search reduced.
+missing=()
+command -v qalc >/dev/null 2>&1 || missing+=("libqalculate (qalc): unit and currency conversion in the calculator")
+command -v fzf >/dev/null 2>&1 || missing+=("fzf: fuzzy ranking for file search")
+command -v fd >/dev/null 2>&1 || missing+=("fd: file and folder search")
+if (( ${#missing[@]} > 0 )); then
+  echo "Optional packages not found; install them with pacman for the full launcher:" >&2
+  for item in "${missing[@]}"; do echo "  - $item" >&2; done
+fi
 echo
 
 exec "$HERE/omarunner-apply"
