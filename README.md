@@ -61,7 +61,7 @@ validates it and enables it. Then run the setup wizard to choose its keys
 (below):
 
 ```bash
-~/.config/omarchy/plugins/videinfra.omarunner/bin/omarunner setup
+~/.config/omarchy/plugins/videinfra.omarunner/bin/omarunner-setup
 ```
 
 Optional packages:
@@ -87,7 +87,7 @@ A plugin cannot declare keys itself, so omarunner ships a setup step like
 Tandem's:
 
 ```bash
-~/.config/omarchy/plugins/videinfra.omarunner/bin/omarunner setup
+~/.config/omarchy/plugins/videinfra.omarunner/bin/omarunner-setup
 ```
 
 It asks which key opens omarunner (default `SUPER + SPACE`, which replaces
@@ -99,8 +99,10 @@ up first, harmless if the plugin is removed) and reloads Hyprland. Re-run it any
 time, or use **Keybindings…** on the Omarunner Settings page. The bar's Omarchy
 button and `SUPER + CTRL + SPACE` keep opening the Omarchy menu.
 
-For scripts: `omarunner setup --yes --launcher "SUPER + R" --apps none`, and
-`omarunner apply` to regenerate from `omarunner.json`.
+For scripts: `omarunner-setup --yes --launcher "SUPER + R" --apps none`, and
+`omarunner-apply` to regenerate from `omarunner.json` (both live in the plugin's
+`bin/` folder; once `omarunner` is on your PATH, `omarunner setup` and
+`omarunner apply` do the same).
 
 Prefer to write the binds yourself? Add these to `~/.config/hypr/bindings.lua`
 instead, then run `hyprctl reload`:
@@ -139,7 +141,7 @@ ln -s ~/.config/omarchy/plugins/videinfra.omarunner/bin/omarunner ~/.local/bin/o
 Take the keys out first, then remove the plugin:
 
 ```bash
-~/.config/omarchy/plugins/videinfra.omarunner/bin/omarunner apply --remove
+~/.config/omarchy/plugins/videinfra.omarunner/bin/omarunner-apply --remove
 omarchy plugin remove videinfra.omarunner
 ```
 
