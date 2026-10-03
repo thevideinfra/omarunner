@@ -115,9 +115,9 @@ test("uninstall leaves a bin symlink pointing elsewhere and reports it skipped",
   assert.equal(await readlink(link), elsewhere)
 })
 
-// Read-only guard: the real, live-installed plugin symlink is never touched by
-// this suite. Skipped on any machine where omarunner is not installed.
-test("the real installed plugin symlink is untouched by this suite", async (t) => {
+// Read-only guard: the real, live-installed plugin (a dev symlink or an
+// `omarchy plugin add` clone) is never touched by this suite. Skipped on any machine where omarunner is not installed.
+test("the real installed plugin is untouched by this suite", async (t) => {
   const home = process.env.HOME
   const realTarget = join(home, ".config", "omarchy", "plugins", "videinfra.omarunner")
 
@@ -129,7 +129,9 @@ test("the real installed plugin symlink is untouched by this suite", async (t) =
     throw error
   }
 
-  assert.ok(stat.isSymbolicLink(), `${realTarget} exists but is not a symlink`)
+  // A dev checkout is a symlink; an `omarchy plugin add` install is a real
+  // clone. Either way the suite must have left it in place.
+  assert.ok(stat.isSymbolicLink() || stat.isDirectory(), `${realTarget} is neither a symlink nor a directory`)
 })
 
 // -- install.sh names optional packages that are missing, and still succeeds.
