@@ -2,6 +2,10 @@
 // in-launcher Settings page as preset choices and on/off toggles.
 function CHOICES() {
   return [
+    { key: "accent", label: "Accent", choices: [
+      { value: "theme", label: "Theme" }, { value: "blue", label: "Blue" }, { value: "cyan", label: "Cyan" },
+      { value: "green", label: "Green" }, { value: "magenta", label: "Magenta" }, { value: "yellow", label: "Yellow" },
+      { value: "red", label: "Red" }, { value: "orange", label: "Orange" }] },
     { key: "width", label: "Width", choices: [
       { value: 300, label: "Narrow" }, { value: 420, label: "Normal" },
       { value: 510, label: "Wide" }, { value: 680, label: "Extra wide" }] },
@@ -44,12 +48,13 @@ function TOGGLES() {
   return [
     { key: "fuzzy", label: "Fuzzy matching" },
     { key: "categories", label: "Category column" },
-    { key: "hints", label: "Ctrl+number hints" }
+    { key: "hints", label: "Ctrl+number hints" },
+    { key: "about", label: "Version and GitHub link" }
   ]
 }
 
 function defaults() {
-  return { width: 420, rows: 9, density: 28, fontScale: 85, hintScale: 100, fontFamily: "", border: 2, opacity: 100, radius: -1, fuzzy: true, categories: true, hints: true }
+  return { width: 420, rows: 9, density: 28, fontScale: 85, hintScale: 100, fontFamily: "", border: 2, opacity: 100, radius: -1, accent: "theme", fuzzy: true, categories: true, hints: true, about: true }
 }
 
 function choiceFor(key) {
@@ -74,6 +79,7 @@ function resolve(config) {
       out[key] = family.length <= 64 ? family : ""
       continue
     }
+    if (key === "accent") { if (isHexColour(given[key])) out[key] = given[key] }
     if (inRange(key, given[key])) { out[key] = given[key]; continue }
     for (var c = 0; c < list[i].choices.length; c++) if (list[i].choices[c].value === given[key]) out[key] = given[key]
   }
@@ -98,6 +104,8 @@ function isPreset(key, value) {
   return false
 }
 
+function isHexColour(value) { return typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value) }
+
 function currentLabel(key, value) {
   var choice = choiceFor(key)
   if (!choice) return String(value)
@@ -110,6 +118,7 @@ function currentLabel(key, value) {
 function customChoice(key, text) {
   var raw = String(text || "").trim()
   if (key === "fontFamily") return raw && raw.length <= 64 ? { value: raw, label: raw } : null
+  if (key === "accent") return isHexColour(raw) ? { value: raw, label: raw } : null
   if (!RANGES()[key]) return null
   var match = /^(\d+)\s*(%|px)?$/i.exec(raw)
   if (!match) return null
@@ -139,6 +148,7 @@ function customDisplayRow(activeMenu, text) {
 
 function customHint(key) {
   if (key === "fontFamily") return "Type a font name"
+  if (key === "accent") return "Type a hex colour, like #ff8800"
   var range = RANGES()[key]
   return "Type a number, " + range[0] + "–" + range[1]
 }
@@ -160,8 +170,10 @@ function menuRow(id, parent, label, order) {
 // Page entries are alphabetical by name; a submenu's choices keep their
 // preset order (Narrow, Normal, Wide...).
 // setupCommand: shell command that opens the keybinding wizard; when given,
-// a "Keybindings…" row runs it.
-function pageRows(settingsIn, setupCommand) {
+// a "Keybindings…" row runs it. about: { version, openCommand }; with the
+// "about" setting on, a first row shows the name and version with a GitHub
+// icon and opens the repository.
+function pageRows(settingsIn, setupCommand, about) {
   var settings = settingsIn || defaults()
   var entries = []
   var checked = ({})
@@ -173,7 +185,8 @@ function pageRows(settingsIn, setupCommand) {
     for (var c = 0; c < list[i].choices.length; c++) {
       var choice = list[i].choices[c]
       var id = menuId + "." + c
-      group.push({ id: id, parent: menuId, kind: "setting-option", icon: "", iconFont: "", label: choice.label, title: "",
+      // Accent choices show their colour as a dot in the row's icon spot.
+      group.push({ id: id, parent: menuId, kind: "setting-option", icon: key === "accent" ? "●" : "", iconFont: "", label: choice.label, title: "",
         target: "", description: "", action: "", provider: "", aliases: [], when: "", checked: "config",
         value: key + "=" + choice.value, order: 0 })
       checked[id] = settings[key] === choice.value
@@ -201,12 +214,16 @@ function pageRows(settingsIn, setupCommand) {
   }
   entries.sort(function(a, b) { return a.name.localeCompare(b.name) })
   var rows = []
-  for (var e = 0; e < entries.length; e++) {
-    for (var r = 0; r < entries[e].rows.length; r++) {
-      entries[e].rows[r].order = rows.length
-      rows.push(entries[e].rows[r])
-    }
+  if (about && about.openCommand && settings.about !== false) {
+    rows.push({ id: PAGE_ID() + ".github", parent: PAGE_ID(), kind: "action", icon: "\uf09b", iconFont: "",
+      label: "omarunner" + (about.version ? " · v" + about.version : ""), title: "", target: "",
+      description: "Open the project on GitHub", action: about.openCommand, provider: "", aliases: [], when: "",
+      checked: "", order: 0 })
   }
+  for (var e = 0; e < entries.length; e++) {
+    for (var r = 0; r < entries[e].rows.length; r++) rows.push(entries[e].rows[r])
+  }
+  for (var o = 0; o < rows.length; o++) rows[o].order = o
   return { rows: rows, checked: checked }
 }
 
@@ -222,5 +239,5 @@ function applyOption(config, optionValue) {
 if (typeof module !== "undefined") {
   module.exports = { defaults: defaults, resolve: resolve, withSetting: withSetting, toggled: toggled,
     currentLabel: currentLabel, pageRows: pageRows, applyOption: applyOption, customChoice: customChoice,
-    customDisplayRow: customDisplayRow }
+    customDisplayRow: customDisplayRow, customHint: customHint }
 }

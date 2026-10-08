@@ -37,6 +37,23 @@ function keepExisting(entries, existingText) {
   return list.filter(function(e) { return present[e.path] === true })
 }
 
+// "recent" alone lists the newest files; "recent report" searches them.
+function claims(query) { return /^recent(\s|$)/i.test(String(query || "").trim()) }
+
+function filter(query) { return claims(query) ? String(query).trim().slice(6).trim() : "" }
+
+// The paths to show for a query: the newest `limit` entries for a bare
+// "recent", otherwise the matches for the filter (or the whole query).
+function forQuery(entries, query, fuzzy, limit) {
+  var list = Array.isArray(entries) ? entries : []
+  if (claims(query)) {
+    var term = filter(query)
+    if (!term) return list.slice(0, limit).map(function(e) { return e.path })
+    return matches(list, term, fuzzy).slice(0, limit)
+  }
+  return matches(list, query, fuzzy).slice(0, limit)
+}
+
 // Every term must appear in the path; a basename hit on the first term ranks
 // ahead, otherwise recency order holds.
 // With fuzzy on, a basename holding the query's letters in order (3+
@@ -73,5 +90,6 @@ function inOrder(needle, text) {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { parseXbel: parseXbel, matches: matches, existsArgs: existsArgs, keepExisting: keepExisting }
+  module.exports = { parseXbel: parseXbel, matches: matches, existsArgs: existsArgs, keepExisting: keepExisting,
+    claims: claims, filter: filter, forQuery: forQuery }
 }

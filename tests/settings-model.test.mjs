@@ -5,8 +5,8 @@ const S = await loadJsModule("SettingsModel.js")
 
 test("defaults match the tuned launcher", () => {
   assert.deepEqual(S.resolve({}), { width: 420, rows: 9, density: 28, fontScale: 85, hintScale: 100, fontFamily: "", border: 2,
-    opacity: 100, radius: -1,
-    fuzzy: true, categories: true, hints: true })
+    opacity: 100, radius: -1, accent: "theme",
+    fuzzy: true, categories: true, hints: true, about: true })
 })
 
 test("resolve keeps valid presets and rejects the rest", () => {
@@ -52,7 +52,7 @@ test("the Settings page lists its entries alphabetically, choices in preset orde
   const page = S.pageRows(S.defaults())
   const top = page.rows.filter(r => r.parent === "omarunner-settings").map(r => r.label.split(" · ")[0])
   assert.deepEqual(top, [...top].sort((a, b) => a.localeCompare(b)))
-  assert.equal(top[0], "Border")
+  assert.equal(top[0], "Accent")
   const widths = page.rows.filter(r => r.parent === "omarunner-settings.width").map(r => r.label)
   assert.deepEqual(widths, ["Narrow", "Normal", "Wide", "Extra wide", "Custom…"])
   assert.deepEqual(page.rows.map(r => r.order), page.rows.map((_, i) => i))
@@ -162,4 +162,53 @@ test("the Settings page offers a Keybindings… row that runs the setup command"
   const top = page.rows.filter(r => r.parent === "omarunner-settings").map(r => r.label.split(" · ")[0].replace("…", ""))
   assert.deepEqual(top, [...top].sort((a, b) => a.localeCompare(b)))
   assert.equal(S.pageRows(S.defaults()).rows.some(r => r.id === "omarunner-settings.keys"), false)
+})
+
+// -- Accent colour and the About row.
+
+test("accent defaults to the theme and takes palette names or a hex colour", () => {
+  assert.equal(S.resolve({}).accent, "theme")
+  assert.equal(S.resolve({ settings: { accent: "blue" } }).accent, "blue")
+  assert.equal(S.resolve({ settings: { accent: "#ff8800" } }).accent, "#ff8800")
+  assert.equal(S.resolve({ settings: { accent: "chartreuse" } }).accent, "theme")
+  assert.equal(S.resolve({ settings: { accent: "#12345" } }).accent, "theme")
+  assert.deepEqual(S.customChoice("accent", " #FF8800 "), { value: "#FF8800", label: "#FF8800" })
+  assert.equal(S.customChoice("accent", "orange"), null)
+  assert.equal(S.currentLabel("accent", "theme"), "Theme")
+  assert.equal(S.currentLabel("accent", "#ff8800"), "Custom (#ff8800)")
+  assert.equal(S.applyOption({}, "accent=cyan").settings.accent, "cyan")
+})
+
+test("accent options carry a swatch glyph and the page lists Accent first alphabetically", () => {
+  const page = S.pageRows(S.defaults())
+  const options = page.rows.filter(r => r.parent === "omarunner-settings.accent" && r.kind === "setting-option")
+  assert.deepEqual(options.map(r => r.label), ["Theme", "Blue", "Cyan", "Green", "Magenta", "Yellow", "Red", "Orange"])
+  assert.equal(options.every(r => r.icon === "●"), true)
+  assert.equal(options[1].value, "accent=blue")
+  assert.equal(page.rows.filter(r => r.parent === "omarunner-settings")[0].label, "Accent · Theme")
+  assert.equal(S.customHint("accent"), "Type a hex colour, like #ff8800")
+})
+
+test("the version and GitHub row sits first when on, and goes away when off", () => {
+  const about = { version: "0.3.0", openCommand: "xdg-open 'https://github.com/thevideinfra/omarunner'" }
+  const on = S.pageRows(S.defaults(), "", about)
+  const top = on.rows.filter(r => r.parent === "omarunner-settings")[0]
+  assert.equal(top.id, "omarunner-settings.github")
+  assert.equal(top.label, "omarunner · v0.3.0")
+  assert.equal(top.icon, "")
+  assert.equal(top.kind, "action")
+  assert.equal(top.action, about.openCommand)
+  assert.deepEqual(on.rows.map(r => r.order), on.rows.map((_, i) => i))
+  const off = S.pageRows(S.resolve({ settings: { about: false } }), "", about)
+  assert.equal(off.rows.some(r => r.id === "omarunner-settings.github"), false)
+  assert.equal(S.pageRows(S.defaults()).rows.some(r => r.id === "omarunner-settings.github"), false)
+  assert.equal(S.defaults().about, true)
+})
+
+test("the About switch is a normal Settings toggle", () => {
+  const page = S.pageRows(S.defaults())
+  const row = page.rows.find(r => r.value === "about")
+  assert.equal(row.kind, "setting-toggle")
+  assert.equal(row.label, "Version and GitHub link")
+  assert.equal(S.toggled({}, "about").settings.about, false)
 })

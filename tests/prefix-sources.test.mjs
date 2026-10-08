@@ -270,3 +270,18 @@ test("recent entries whose files are gone are dropped, order kept", () => {
   assert.deepEqual(kept.map(e => e.path), ["/home/ks/reports/q3.xlsx", "/home/ks/Docs/report.odt"])
   assert.deepEqual(R.keepExisting(entries, ""), [])
 })
+
+// -- "recent" lists the newest files; "recent term" searches them.
+
+test("recent claims its keyword and lists the newest entries first", () => {
+  assert.equal(R.claims("recent"), true)
+  assert.equal(R.claims("Recent report"), true)
+  assert.equal(R.claims("recently"), false)
+  assert.equal(R.claims("rec"), false)
+  assert.equal(R.filter("recent  q3 "), "q3")
+  const entries = R.parseXbel(XBEL)
+  assert.deepEqual(R.forQuery(entries, "recent", false, 2),
+    ["/home/ks/reports/q3.xlsx", "/home/ks/Docs/report.odt"])
+  assert.deepEqual(R.forQuery(entries, "recent q3", false, 8), ["/home/ks/reports/q3.xlsx"])
+  assert.deepEqual(R.forQuery(entries, "report", false, 8), R.matches(entries, "report", false))
+})

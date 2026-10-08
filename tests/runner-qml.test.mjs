@@ -323,7 +323,7 @@ test("the Settings and Sources pages are labelled as omarunner's own", () => {
 
 test("Sources and Settings rows show ON/OFF badges and radio dots, driven by checkedResults", () => {
   assert.match(qml, /component RadioDot: Item/)
-  assert.ok(qml.includes("Color.accent"))
+  assert.ok(qml.includes("root.accent"))
   assert.match(qml, /StateBadge \{\s*visible: row\.kind === "source-toggle"/)
   assert.ok(qml.includes('row.kind === "setting-option" || row.kind === "setting-custom"'))
   assert.ok(qml.includes("root.checkedResults[row.itemId] === true"))
@@ -355,4 +355,27 @@ test("recent files are checked for existence before they are offered", async () 
   const src = await readFile(join(root, "RecentSource.qml"), "utf8")
   assert.ok(src.includes("RecentModel.existsArgs("))
   assert.ok(src.includes("RecentModel.keepExisting(root.parsed, output)"))
+})
+
+test("Escape on the Sources or Settings page goes back instead of closing", () => {
+  assert.ok(qml.includes('else if (root.inPage("sources") || root.inPage("omarunner-settings")) root.goBack()'))
+})
+
+test("a source that also answers unprefixed queries is exempt from the prefix guard", async () => {
+  assert.ok(qml.includes("s.alsoUnprefixed !== true"))
+  assert.ok((await readFile(join(root, "RecentSource.qml"), "utf8")).includes("property bool alsoUnprefixed: true"))
+})
+
+test("the accent colour comes from the Accent setting and colours the highlights", () => {
+  assert.match(qml, /AccentSource \{\s*id: accentSource\s*choice: root\.settings\.accent/)
+  assert.ok(qml.includes("readonly property color accent: accentSource.value"))
+  assert.equal(qml.includes("Color.accent"), false)
+  assert.ok(qml.includes('property color selectedText: root.settings.accent === "theme" ? Color.menu.selectedText : root.accent'))
+  assert.ok(qml.includes('row.value.indexOf("accent=") === 0'))
+})
+
+test("the About row opens the repository, its text from the manifest", () => {
+  assert.ok(qml.includes("root.fileVersion || String(root.manifest && root.manifest.version"))
+  assert.ok(qml.includes('Qt.resolvedUrl("manifest.json")'))
+  assert.ok(qml.includes("https://github.com/thevideinfra/omarunner"))
 })

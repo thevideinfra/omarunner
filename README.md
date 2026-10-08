@@ -214,7 +214,7 @@ Folders, Files and Recent. A search that matches nothing offers a web search.
 | Open | `github.com/x`, `https://…`, `localhost:8080`, `~/Downloads`, `/etc` | open it | copy the URL / reveal the folder |
 | Folders | `documents`, `docmuents`, `etc`, `hypr` | open the folder | terminal in the folder |
 | Files | `bindlua`, `invoice pdf` | open the file | reveal its folder |
-| Recent | part of a recently opened file's name | open | reveal its folder |
+| Recent | `recent` (the newest files), `recent report`, or part of a recently opened file's name | open | reveal its folder |
 | Windows | part of a window title or app name | focus it | focus it |
 | Command | `> htop` | run in a terminal | run in the background |
 | Kill | `kill firefox` | `kill` (SIGTERM) | `kill -KILL` |
@@ -236,7 +236,7 @@ ranked by `fzf`.
 | `Ctrl+1` … `Ctrl+9` | launch that row (add Shift for its Shift action) |
 | `Enter` / `Shift+Enter` | launch the selected row / its alternate action |
 | `Up` / `Down`, `PageUp` / `PageDown` | move the selection |
-| `Escape` | clear the query, then close |
+| `Escape` | clear the query, then close; on the Sources or Settings page, go back |
 | `Backspace` / `Left` on an empty query | back out of a submenu |
 | `Ctrl+,` or the filter button (top left) | Sources page, press again to close |
 | `Ctrl+S` or the gear (top right) | Settings page, press again to close |
@@ -249,13 +249,19 @@ The **Omarunner Sources** page (filter button, `Ctrl+,`) lists every search sour
 **ON**/**OFF** badge at the right; Enter or a click toggles one. Applications,
 Omarchy and Session can be switched off the same way.
 
-The **Omarunner Settings** page (gear, `Ctrl+S`) holds: border, category column, corner radius,
-Ctrl+number hints, font, fuzzy matching, hint size, opacity, row height, rows
-before scrolling, text size and width. On/off settings show an **ON**/**OFF**
-badge after their name; a choice (open it to see the presets, the current one
-has a dot) offers presets and a
-**Custom…** entry: open the setting and type a value (a number in the range the
-row names, or any font name), then pick the **Use …** row.
+The **Omarunner Settings** page (gear, `Ctrl+S`) holds: accent colour, border,
+category column, corner radius, Ctrl+number hints, font, fuzzy matching, hint
+size, opacity, row height, rows before scrolling, text size, the version and
+GitHub link, and width. On/off settings show an **ON**/**OFF** badge after their
+name; a choice (open it to see the presets, the current one has a dot) offers
+presets and a **Custom…** entry: open the setting and type a value (a number in
+the range the row names, a font name, or a `#rrggbb` colour for the accent),
+then pick the **Use …** row.
+
+The **accent colour** is the theme's own by default; pick another colour from the
+theme's palette, or type a hex colour. It colours the selected row, the
+ON/OFF badges and the choice dots. The first row of the page shows the version
+and opens the project on GitHub; turn it off with **Version and GitHub link**.
 
 Both pages are stored in `~/.config/omarchy/omarunner.json` (`sources`,
 `settings`, and `webSearchUrl` for the fallback web search, DuckDuckGo by

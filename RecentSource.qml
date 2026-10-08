@@ -10,9 +10,11 @@ Item {
   id: root
   property string sourceId: "recent"
   property string groupLabel: "Recent"
-  property string hint: "Recently opened files"
+  property string hint: "Recently opened files · recent"
   property int maxRows: 5
   property bool enabled: true
+  // Also answers ordinary queries, not only "recent".
+  property bool alsoUnprefixed: true
   property string home: Quickshell.env("HOME")
   property var entries: []
   // Parsed list before the existence check; entries is what remains of it.
@@ -20,8 +22,12 @@ Item {
   property bool fuzzy: false
   signal results(int serial, var rows)
 
+  function claims(query) { return RecentModel.claims(query) }
+
+  // "recent" lists the newest files (up to 8); other queries search them.
   function search(query, serial) {
-    var paths = RecentModel.matches(root.entries, query, root.fuzzy)
+    root.maxRows = RecentModel.claims(query) ? 8 : 5
+    var paths = RecentModel.forQuery(root.entries, query, root.fuzzy, root.maxRows)
     var rows = []
     for (var i = 0; i < paths.length && i < root.maxRows; i++) {
       var row = FileModel.fileRow(paths[i], root.home)

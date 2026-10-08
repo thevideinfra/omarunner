@@ -15,6 +15,11 @@ Item {
   property string omarchyPath: Quickshell.env("OMARCHY_PATH")
   property var shell: null
   property var manifest: null
+  // The installed version, for the About row: read from the plugin's own
+  // manifest.json (the host's injected manifest, when present, is the fallback).
+  property string fileVersion: ""
+  readonly property string version: root.fileVersion || String(root.manifest && root.manifest.version || "")
+  onVersionChanged: if (root.rowsLoaded) root.refreshSourcePage()
 
   // Plugin lifecycle hooks. The host calls open(payloadJson) after
   // `omarchy-shell shell summon videinfra.omarunner ...` and close() when hidden.
@@ -98,7 +103,10 @@ Item {
   property var borderSpec: Border.surfaceSpec("menu", "border", border, root.settings.border)
   property color scrim: Color.menu.scrim
   property color selectedBackground: Color.menu.selectedBackground
-  property color selectedText: Color.menu.selectedText
+  // Settings → Accent: highlights follow the chosen colour; "theme" keeps the
+  // theme's own selected-text colour and accent.
+  readonly property color accent: accentSource.value
+  property color selectedText: root.settings.accent === "theme" ? Color.menu.selectedText : root.accent
   property color selectedBorder: Color.menu.selectedBorder
   property var selectedBorderSpec: Border.surfaceSpec("menu", "selected-border", selectedBorder, 0)
   readonly property real rowReservedBorderLeft: Border.left(selectedBorderSpec)
@@ -163,16 +171,16 @@ Item {
     Rectangle {
       anchors.fill: parent
       radius: Style.space(5)
-      color: badge.on ? Util.alpha(Color.accent, 0.18) : Util.alpha(badge.textColor, 0.07)
+      color: badge.on ? Util.alpha(root.accent, 0.18) : Util.alpha(badge.textColor, 0.07)
       border.width: 1
-      border.color: badge.on ? Color.accent : Util.alpha(badge.textColor, 0.2)
+      border.color: badge.on ? root.accent : Util.alpha(badge.textColor, 0.2)
 
       Text {
         id: badgeText
         anchors.centerIn: parent
         textFormat: Text.PlainText
         text: badge.on ? "ON" : "OFF"
-        color: badge.on ? Color.accent : badge.textColor
+        color: badge.on ? root.accent : badge.textColor
         opacity: badge.on ? 1 : 0.55
         font.family: root.textFamily
         font.pixelSize: root.fontCaption
@@ -198,7 +206,7 @@ Item {
       radius: width / 2
       color: "transparent"
       border.width: dot.checked ? 2 : 1
-      border.color: dot.checked ? Color.accent : Util.alpha(dot.textColor, 0.35)
+      border.color: dot.checked ? root.accent : Util.alpha(dot.textColor, 0.35)
 
       Rectangle {
         anchors.centerIn: parent
@@ -206,7 +214,7 @@ Item {
         height: width
         radius: width / 2
         visible: dot.checked
-        color: Color.accent
+        color: root.accent
       }
     }
   }
@@ -651,7 +659,7 @@ Item {
       // prefix is typed, even if an older reply is still stored. Web has a
       // prefix too but also answers unprefixed queries with its fallback row.
       var claimsNow = root.sourceClaims(s, root.filterText.trim())
-      var prefixOnly = typeof s.claims === "function" && s.fallback !== true
+      var prefixOnly = typeof s.claims === "function" && s.fallback !== true && s.alsoUnprefixed !== true
       groups.push({ sourceId: s.sourceId, groupLabel: s.groupLabel, maxRows: s.maxRows,
         rows: prefixOnly && !claimsNow ? [] : (root.sourceRows[s.sourceId] || []),
         leading: s.leading === true, exclusive: claimsNow, fallback: s.fallback === true })
@@ -707,8 +715,11 @@ Item {
     // startup, before that binding has a value.
     // "Keybindings…" opens the setup wizard in a floating terminal.
     var setup = Quickshell.env("HOME") + "/.config/omarchy/plugins/videinfra.omarunner/bin/omarunner-setup"
+    // The first row names the plugin, its version, and opens the repository.
+    var about = { version: root.version,
+      openCommand: "xdg-open " + Util.shellQuote("https://github.com/thevideinfra/omarunner") }
     var page = SettingsModel.pageRows(SettingsModel.resolve(sourceConfig.config),
-      "omarchy-launch-floating-terminal-with-presentation " + Util.shellQuote(setup))
+      "omarchy-launch-floating-terminal-with-presentation " + Util.shellQuote(setup), about)
     for (var p = 0; p < page.rows.length; p++) {
       page.rows[p].order = order.length
       items[page.rows[p].id] = page.rows[p]
@@ -929,6 +940,19 @@ Item {
     id: webSource
     searchUrl: sourceConfig.config.webSearchUrl || ""
     onResults: function(serial, rows) { root.acceptSourceRows(webSource.sourceId, serial, rows) }
+  }
+
+  FileView {
+    path: String(Qt.resolvedUrl("manifest.json")).replace(/^file:\/\//, "")
+    printErrors: false
+    onLoaded: {
+      try { var v = JSON.parse(text()).version; if (v) root.fileVersion = String(v) } catch (e) {}
+    }
+  }
+
+  AccentSource {
+    id: accentSource
+    choice: root.settings.accent
   }
 
   FolderSource {
@@ -1228,6 +1252,7 @@ Item {
             event.accepted = true
           } else if (event.key === Qt.Key_Escape) {
             if (root.filterText) root.setFilter("")
+            else if (root.inPage("sources") || root.inPage("omarunner-settings")) root.goBack()
             else root.cancel()
             event.accepted = true
           } else if (Util.editsFilter(event, root.filterText)) {
@@ -1411,11 +1436,13 @@ Item {
               required property string label
               required property string target
               required property string detail
+              required property string value
               required property string path
               required property string action
               required property string section
               required property int childCount
 
+              readonly property bool isAccentChoice: row.kind === "setting-option" && row.value.indexOf("accent=") === 0
               readonly property bool hasCursor: root.cursorActive && row.index === root.selectedIndex
               readonly property bool isApp: row.kind === "app"
               // App and source rows draw an image; source rows without an
@@ -1476,7 +1503,8 @@ Item {
                   textFormat: Text.PlainText
                   visible: row.hasIcon && !row.usesImage
                   text: row.icon
-                  color: row.textColor
+                  // Accent choices show their own colour in the icon spot.
+                  color: row.isAccentChoice ? accentSource.colorOf(row.value.slice(7)) : row.textColor
                   font.family: row.iconFont.length > 0 ? row.iconFont : root.fontFamily
                   font.pixelSize: row.iconSize
                   width: Style.space(28)
