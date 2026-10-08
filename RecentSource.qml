@@ -15,6 +15,8 @@ Item {
   property bool enabled: true
   property string home: Quickshell.env("HOME")
   property var entries: []
+  // Parsed list before the existence check; entries is what remains of it.
+  property var parsed: []
   property bool fuzzy: false
   signal results(int serial, var rows)
 
@@ -39,8 +41,22 @@ Item {
     path: root.home + "/.local/share/recently-used.xbel"
     watchChanges: true
     printErrors: false
-    onLoaded: root.entries = RecentModel.parseXbel(text())
+    onLoaded: root.refresh(RecentModel.parseXbel(text()))
     onFileChanged: reload()
-    onLoadFailed: root.entries = []
+    onLoadFailed: root.refresh([])
+  }
+
+  // Drop entries whose file is gone: the recent list outlives deleted files.
+  function refresh(list) {
+    root.parsed = list
+    if (list.length === 0) { root.entries = []; return }
+    checker.run(RecentModel.existsArgs(list.map(function(e) { return e.path })), 0, "")
+  }
+
+  LatestProcess {
+    id: checker
+    onFinished: function(serial, query, exitCode, output) {
+      root.entries = RecentModel.keepExisting(root.parsed, output)
+    }
   }
 }

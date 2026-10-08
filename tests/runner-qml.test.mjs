@@ -350,3 +350,9 @@ test("the Settings page passes the keybinding wizard command to its Keybindingsâ
   assert.ok(qml.includes("omarchy-launch-floating-terminal-with-presentation \" + Util.shellQuote(setup)"))
   assert.ok(qml.includes("videinfra.omarunner/bin/omarunner-setup"))
 })
+
+test("recent files are checked for existence before they are offered", async () => {
+  const src = await readFile(join(root, "RecentSource.qml"), "utf8")
+  assert.ok(src.includes("RecentModel.existsArgs("))
+  assert.ok(src.includes("RecentModel.keepExisting(root.parsed, output)"))
+})

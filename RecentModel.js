@@ -22,6 +22,21 @@ function parseXbel(xmlText) {
   return out
 }
 
+// The list keeps files that were deleted or live on an unmounted drive. One
+// process checks which paths still exist; the output is one existing path per
+// line, and the entries keep their order.
+function existsArgs(paths) {
+  return ["sh", "-c", 'for p; do [ -e "$p" ] && printf "%s\\n" "$p"; done', "sh"].concat(paths)
+}
+
+function keepExisting(entries, existingText) {
+  var present = ({})
+  var lines = String(existingText || "").split("\n")
+  for (var i = 0; i < lines.length; i++) if (lines[i]) present[lines[i]] = true
+  var list = Array.isArray(entries) ? entries : []
+  return list.filter(function(e) { return present[e.path] === true })
+}
+
 // Every term must appear in the path; a basename hit on the first term ranks
 // ahead, otherwise recency order holds.
 // With fuzzy on, a basename holding the query's letters in order (3+
@@ -58,5 +73,5 @@ function inOrder(needle, text) {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { parseXbel: parseXbel, matches: matches }
+  module.exports = { parseXbel: parseXbel, matches: matches, existsArgs: existsArgs, keepExisting: keepExisting }
 }

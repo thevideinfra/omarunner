@@ -260,3 +260,13 @@ test("common file extensions are not mistaken for web addresses", () => {
   for (const q of ["script.pl", "config.in", "Makefile.in", "run.pl"]) assert.equal(L.classify(q, HOME), null, q)
   assert.deepEqual(L.classify("github.com", HOME), { kind: "url", url: "https://github.com" })
 })
+
+test("recent entries whose files are gone are dropped, order kept", () => {
+  const entries = R.parseXbel(XBEL)
+  const args = R.existsArgs(entries.map(e => e.path))
+  assert.equal(args[0], "sh")
+  assert.deepEqual(args.slice(-3), entries.map(e => e.path))
+  const kept = R.keepExisting(entries, "/home/ks/Docs/report.odt\n/home/ks/reports/q3.xlsx\n")
+  assert.deepEqual(kept.map(e => e.path), ["/home/ks/reports/q3.xlsx", "/home/ks/Docs/report.odt"])
+  assert.deepEqual(R.keepExisting(entries, ""), [])
+})

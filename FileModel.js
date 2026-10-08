@@ -115,10 +115,18 @@ function fileRows(stdoutText, home, query, keepOrder) {
 
 function openCommand(path) { return path ? "xdg-open " + shellQuote(path) : "" }
 
+// Reveal: ask whatever file manager owns org.freedesktop.FileManager1 (the
+// user's default one) to show the file selected; if none answers, just open
+// the folder with the default handler.
 function revealCommand(path) {
   if (!path) return ""
   var dir = String(path).split("/").slice(0, -1).join("/") || "/"
-  return "nautilus " + shellQuote(dir)
+  // The URL sits in single quotes for the shell and double quotes for GVariant:
+  // "'" and "$" are percent-encoded so nothing in a file name can end the
+  // quoting or expand.
+  var url = fileUrl(path).replace(/'/g, "%27").replace(/\$/g, "%24")
+  return "gdbus call --session --dest org.freedesktop.FileManager1 --object-path /org/freedesktop/FileManager1 " +
+    "--method org.freedesktop.FileManager1.ShowItems '[\"" + url + "\"]' '' >/dev/null 2>&1 || xdg-open " + shellQuote(dir)
 }
 
 if (typeof module !== "undefined") {

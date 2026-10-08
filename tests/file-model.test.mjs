@@ -85,7 +85,9 @@ test("fileRows falls back to alphabetical once prefix and depth tie", () => {
 
 test("openCommand and revealCommand quote paths", () => {
   assert.equal(F.openCommand("/home/ks/it's here.txt"), "xdg-open '/home/ks/it'\\''s here.txt'")
-  assert.equal(F.revealCommand("/home/ks/Docs/a.txt"), "nautilus '/home/ks/Docs'")
+  assert.equal(F.revealCommand("/home/ks/Docs/a.txt"),
+    "gdbus call --session --dest org.freedesktop.FileManager1 --object-path /org/freedesktop/FileManager1 " +
+    "--method org.freedesktop.FileManager1.ShowItems '[\"file:///home/ks/Docs/a.txt\"]' '' >/dev/null 2>&1 || xdg-open '/home/ks/Docs'")
 })
 
 test("command builders reject empty paths", () => {
@@ -119,4 +121,33 @@ test("a query with a slash matches against the full path, since fd rejects it as
   assert.equal(args[args.length - 2], "docs/report")
   assert.equal(F.fdArgs("invoice", HOME).includes("--full-path"), false)
   assert.equal(F.fdArgs("docs report", HOME).includes("--full-path"), false)
+})
+
+test("reveal asks the default file manager over D-Bus and falls back to opening the folder", () => {
+  const cmd = F.revealCommand("/home/ks/My Docs/it's #1?.txt")
+  assert.ok(cmd.includes("org.freedesktop.FileManager1.ShowItems"))
+  assert.ok(cmd.includes('[\"file:///home/ks/My%20Docs/it%27s%20%231%3F.txt\"]'))
+  assert.ok(cmd.endsWith("|| xdg-open '/home/ks/My Docs'"))
+  assert.equal(cmd.includes("nautilus"), false)
+  assert.equal(F.revealCommand("/top.txt").endsWith("|| xdg-open '/'"), true)
+})
+
+test("a hostile file name cannot break out of the reveal command", async () => {
+  const { spawnSync } = await import("node:child_process")
+  const { mkdtemp, writeFile, chmod, readFile, access } = await import("node:fs/promises")
+  const { tmpdir } = await import("node:os")
+  const { join } = await import("node:path")
+  const dir = await mkdtemp(join(tmpdir(), "reveal-"))
+  // Stub gdbus records its arguments; run the real command string in a real shell.
+  await writeFile(join(dir, "gdbus"), '#!/bin/sh\nfor a; do printf "%s\\n" "$a"; done > "$STUB_OUT"\n')
+  await chmod(join(dir, "gdbus"), 0o755)
+  const out = join(dir, "args.txt")
+  const cmd = F.revealCommand("/tmp/a$(touch pwned)`touch pwned2`\"x'y.txt")
+  const run = spawnSync("sh", ["-c", cmd], { cwd: dir, env: { PATH: `${dir}:${process.env.PATH}`, STUB_OUT: out } })
+  assert.equal(run.status, 0)
+  const args = (await readFile(out, "utf8")).split("\n")
+  const items = args[args.length - 3]
+  assert.equal(items, '["file:///tmp/a%24(touch%20pwned)%60touch%20pwned2%60%22x%27y.txt"]')
+  await assert.rejects(access(join(dir, "pwned")))
+  await assert.rejects(access(join(dir, "pwned2")))
 })
