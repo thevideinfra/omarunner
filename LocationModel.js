@@ -1,12 +1,17 @@
 // Locations source: a query that is a URL or a filesystem path opens directly.
 // Bare hosts need a known TLD, so "notes.md" or "setup.sh" stay file names.
-// ".in" and ".pl" are left out on purpose: they are real countries, but
-// "Makefile.in" and "script.pl" are far more likely to be files.
+// A few of these endings are also common file extensions (".pl" Perl, ".in"
+// autoconf, ".ai" Illustrator, ".app", ".info"): "script.pl" and "Makefile.in"
+// are far more likely to be files than "amazon.in" is to be typed bare. Those
+// count as web addresses only when something makes it unambiguous: a path, a
+// port, a "www." prefix or a scheme.
 function KNOWN_TLDS() {
   return ["com", "org", "net", "io", "dev", "app", "ai", "co", "uk", "de", "edu", "gov", "me", "tv", "gg",
     "xyz", "info", "fr", "nl", "eu", "us", "ca", "jp", "au", "nz", "ch", "se", "no", "fi", "dk", "it",
-    "es", "be", "at", "br", "ru", "cn", "tech", "site", "online", "blog", "cloud", "page", "social", "wiki"]
+    "es", "be", "at", "br", "in", "pl", "ru", "cn", "tech", "site", "online", "blog", "cloud", "page", "social", "wiki"]
 }
+
+function FILE_LIKE_TLDS() { return ["ai", "app", "info", "pl", "in"] }
 
 function classify(query, home) {
   var text = String(query || "").trim()
@@ -16,7 +21,10 @@ function classify(query, home) {
   if (/^localhost(:\d+)?(\/\S*)?$/i.test(text)) return { kind: "url", url: "http://" + text }
   if (/^www\.[^\s.]+\.[a-z]{2,}(\/\S*)?$/i.test(text)) return { kind: "url", url: "https://" + text }
   var host = /^([a-z0-9-]+\.)+([a-z]{2,})(:\d+)?(\/\S*)?$/i.exec(text)
-  if (host && KNOWN_TLDS().indexOf(host[2].toLowerCase()) >= 0) return { kind: "url", url: "https://" + text }
+  if (host && KNOWN_TLDS().indexOf(host[2].toLowerCase()) >= 0) {
+    var explicit = !!(host[3] || host[4])
+    if (explicit || FILE_LIKE_TLDS().indexOf(host[2].toLowerCase()) < 0) return { kind: "url", url: "https://" + text }
+  }
 
   if (text.charAt(0) === "/") return { kind: "path", path: text }
   if (text === "~" || text.indexOf("~/") === 0) return { kind: "path", path: String(home || "") + text.slice(1) }

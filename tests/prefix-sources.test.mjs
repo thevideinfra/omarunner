@@ -256,9 +256,26 @@ test("a command ending in & or a comment still runs and keeps the terminal open"
   }
 })
 
-test("common file extensions are not mistaken for web addresses", () => {
-  for (const q of ["script.pl", "config.in", "Makefile.in", "run.pl"]) assert.equal(L.classify(q, HOME), null, q)
-  assert.deepEqual(L.classify("github.com", HOME), { kind: "url", url: "https://github.com" })
+test("a bare name.tld whose ending is also a file extension stays a file name", () => {
+  for (const q of ["script.pl", "config.in", "Makefile.in", "logo.ai", "Foo.app", "manual.info", "amazon.in", "onet.pl"]) {
+    assert.equal(L.classify(q, HOME), null, q)
+  }
+})
+
+test("a path, a port, www. or a scheme makes those endings a web address again", () => {
+  assert.deepEqual(L.classify("onet.pl/news", HOME), { kind: "url", url: "https://onet.pl/news" })
+  assert.deepEqual(L.classify("amazon.in/dp/x", HOME), { kind: "url", url: "https://amazon.in/dp/x" })
+  assert.deepEqual(L.classify("site.in:8080", HOME), { kind: "url", url: "https://site.in:8080" })
+  assert.deepEqual(L.classify("www.onet.pl", HOME), { kind: "url", url: "https://www.onet.pl" })
+  assert.deepEqual(L.classify("www.amazon.in", HOME), { kind: "url", url: "https://www.amazon.in" })
+  assert.deepEqual(L.classify("https://example.co.in", HOME), { kind: "url", url: "https://example.co.in" })
+})
+
+test("ordinary bare domains are still web addresses", () => {
+  for (const q of ["github.com", "amazon.de", "bbc.co.uk", "example.dev", "x.io"]) {
+    assert.equal(L.classify(q, HOME).kind, "url", q)
+  }
+  assert.equal(L.classify("notes.md", HOME), null)
 })
 
 test("recent entries whose files are gone are dropped, order kept", () => {
