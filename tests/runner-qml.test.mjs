@@ -383,3 +383,18 @@ test("the version pill and GitHub icon sit in the header beside the gear, on the
   assert.ok(qml.includes('Qt.resolvedUrl("manifest.json")'))
   assert.equal(qml.includes("var about = {"), false)
 })
+
+test("choosing Custom… switches the page into a typing mode that shows it", () => {
+  assert.ok(qml.includes("property bool customEditing: false"))
+  assert.ok(qml.includes('readonly property bool editingCustom: root.customEditing && root.activeMenu.indexOf("omarunner-settings.") === 0'))
+  // Selecting the row turns it on; leaving the page or closing turns it off.
+  assert.match(qml, /row\.kind === "setting-custom"[\s\S]*?root\.customEditing = true/)
+  assert.match(qml, /function setActiveMenu[\s\S]*?root\.customEditing = false/)
+  assert.match(qml, /function cancel\(\)[\s\S]*?customEditing = false/)
+  // The header asks for the value, with a blinking accent caret; the row shows an input box.
+  assert.ok(qml.includes("id: headerText"))
+  assert.ok(qml.includes("id: headerCaret"))
+  assert.ok(qml.includes("SettingsModel.customHint(root.activeMenu.slice("))
+  assert.ok(qml.includes("id: customInput"))
+  assert.ok(qml.includes('row.kind === "setting-custom" && root.editingCustom'))
+})

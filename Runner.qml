@@ -78,6 +78,10 @@ Item {
   property string filterText: ""
   property int selectedIndex: 0
   property bool cursorActive: false
+  // Set once the Custom… row of a setting is chosen: the page then asks for
+  // the value (header prompt, caret, an input box on the row).
+  property bool customEditing: false
+  readonly property bool editingCustom: root.customEditing && root.activeMenu.indexOf("omarunner-settings.") === 0
   property var items: ({})
   property var itemOrder: []
   property var navStack: []
@@ -733,6 +737,7 @@ Item {
     if (!root.item(id)) id = "root"
     if (pushHistory && id !== root.activeMenu) root.navStack = root.navStack.concat([root.activeMenu])
     root.activeMenu = id
+    root.customEditing = false
     root.filterText = ""
     root.clearSources()
     root.selectedIndex = 0
@@ -815,6 +820,8 @@ Item {
       if (typedValue) {
         sourceConfig.apply(SettingsModel.applyOption(sourceConfig.config, typedValue.value))
         root.goBack()
+      } else {
+        root.customEditing = true
       }
     } else if (row.kind === "setting-toggle") {
       sourceConfig.apply(SettingsModel.toggled(sourceConfig.config, row.value))
@@ -865,6 +872,7 @@ Item {
 
   function cancel() {
     opened = false
+    customEditing = false
     filterText = ""
     root.clearSources()
   }
@@ -1444,18 +1452,38 @@ Item {
             }
           }
 
+          // Blinking accent caret while a Custom… value is being typed.
+          Rectangle {
+            id: headerCaret
+            visible: root.editingCustom
+            width: Style.space(2)
+            height: headerText.implicitHeight
+            anchors.verticalCenter: parent.verticalCenter
+            x: headerText.x + (root.filterText ? Math.min(headerText.contentWidth, headerText.width) + Style.space(2) : -Style.space(7))
+            color: root.accent
+            SequentialAnimation on opacity {
+              running: root.editingCustom
+              loops: Animation.Infinite
+              NumberAnimation { to: 0; duration: 500 }
+              NumberAnimation { to: 1; duration: 500 }
+            }
+          }
+
           Text {
+            id: headerText
             textFormat: Text.PlainText
             anchors.left: searchGlyph.right
-            anchors.leftMargin: Style.space(10)
+            anchors.leftMargin: Style.space(10) + (root.editingCustom && !root.filterText ? Style.space(8) : 0)
             anchors.right: aboutBox.visible ? aboutBox.left : gearButton.left
             anchors.rightMargin: Style.space(8)
             anchors.verticalCenter: parent.verticalCenter
-            text: root.filterText || ((root.activeMenu === "root")
-              ? "Search…"
-              : ((root.item(root.activeMenu) ? (root.item(root.activeMenu).title || root.item(root.activeMenu).label) : "Go") + "…"))
-            color: root.foreground
-            opacity: root.filterText ? 1 : 0.58
+            text: root.filterText || (root.editingCustom
+              ? SettingsModel.customHint(root.activeMenu.slice("omarunner-settings.".length)) + "…"
+              : (root.activeMenu === "root")
+                ? "Search…"
+                : ((root.item(root.activeMenu) ? (root.item(root.activeMenu).title || root.item(root.activeMenu).label) : "Go") + "…"))
+            color: root.editingCustom && !root.filterText ? root.accent : root.foreground
+            opacity: root.filterText || root.editingCustom ? 1 : 0.58
             font.family: root.textFamily
             font.pixelSize: root.fontHeading
             elide: Text.ElideRight
@@ -1632,8 +1660,38 @@ Item {
                     color: Util.alpha(row.textColor, 0.25)
                   }
 
+                  // The Custom… row turns into an input box while a value is typed.
+                  Rectangle {
+                    id: customInput
+                    visible: row.kind === "setting-custom" && root.editingCustom
+                    anchors.left: labelText.right
+                    anchors.leftMargin: Style.space(10)
+                    anchors.right: parent.right
+                    anchors.verticalCenter: labelText.verticalCenter
+                    height: labelText.height + Style.space(6)
+                    radius: Style.space(5)
+                    color: Util.alpha(root.accent, 0.1)
+                    border.width: 1
+                    border.color: root.accent
+
+                    Text {
+                      anchors.left: parent.left
+                      anchors.leftMargin: Style.space(8)
+                      anchors.right: parent.right
+                      anchors.rightMargin: Style.space(8)
+                      anchors.verticalCenter: parent.verticalCenter
+                      textFormat: Text.PlainText
+                      text: root.filterText || row.detail
+                      color: root.filterText ? root.accent : row.textColor
+                      opacity: root.filterText ? 1 : 0.6
+                      font.family: root.textFamily
+                      font.pixelSize: root.fontCaption
+                      font.bold: root.filterText.length > 0
+                      elide: Text.ElideRight
+                    }
+                  }
+
                   Text {
-                    textFormat: Text.PlainText
                     anchors.left: hintRule.visible ? hintRule.right : labelText.right
                     anchors.leftMargin: hintRule.visible ? Style.space(8) : Style.space(10)
                     anchors.right: parent.right
@@ -1641,7 +1699,7 @@ Item {
                     text: row.detail
                     // Search results show their detail; the Sources page always
                     // shows each source's hint.
-                    visible: (root.filterText || row.kind === "source-toggle" || row.kind === "setting-custom") && row.detail.length > 0 && width > Style.space(24)
+                    visible: !customInput.visible && (root.filterText || row.kind === "source-toggle" || row.kind === "setting-custom") && row.detail.length > 0 && width > Style.space(24)
                     color: row.textColor
                     opacity: 0.52
                     font.family: root.textFamily
