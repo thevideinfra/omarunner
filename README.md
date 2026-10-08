@@ -1,6 +1,6 @@
 # omarunner
 
-A KRunner- and COSMIC-launcher-style runner for Omarchy. It replaces the Omarchy
+A KRunner-style runner for Omarchy. It replaces the Omarchy
 root menu on `SUPER + SPACE`: with nothing typed it is one input line, and the
 first keystroke expands it into results grouped by kind, with the group name in
 a column on the left: applications, the whole Omarchy menu tree, session actions,
