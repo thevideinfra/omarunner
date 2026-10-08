@@ -189,19 +189,11 @@ test("accent options carry a swatch glyph and the page lists Accent first alphab
   assert.equal(S.customHint("accent"), "Type a hex colour, like #ff8800")
 })
 
-test("the version and GitHub row sits first when on, and goes away when off", () => {
-  const about = { version: "0.3.0", openCommand: "xdg-open 'https://github.com/thevideinfra/omarunner'" }
-  const on = S.pageRows(S.defaults(), "", about)
-  const top = on.rows.filter(r => r.parent === "omarunner-settings")[0]
-  assert.equal(top.id, "omarunner-settings.github")
-  assert.equal(top.label, "omarunner · v0.3.0")
-  assert.equal(top.icon, "")
-  assert.equal(top.kind, "action")
-  assert.equal(top.action, about.openCommand)
-  assert.deepEqual(on.rows.map(r => r.order), on.rows.map((_, i) => i))
-  const off = S.pageRows(S.resolve({ settings: { about: false } }), "", about)
-  assert.equal(off.rows.some(r => r.id === "omarunner-settings.github"), false)
-  assert.equal(S.pageRows(S.defaults()).rows.some(r => r.id === "omarunner-settings.github"), false)
+test("the version and GitHub link is a header item, not a row on the Settings page", () => {
+  const page = S.pageRows(S.defaults(), "", { version: "0.3.0", openCommand: "xdg-open x" })
+  assert.equal(page.rows.some(r => r.id.endsWith(".github")), false)
+  assert.equal(page.rows.filter(r => r.parent === "omarunner-settings")[0].label, "Accent · Theme")
+  assert.deepEqual(page.rows.map(r => r.order), page.rows.map((_, i) => i))
   assert.equal(S.defaults().about, true)
 })
 

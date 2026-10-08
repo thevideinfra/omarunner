@@ -374,8 +374,12 @@ test("the accent colour comes from the Accent setting and colours the highlights
   assert.ok(qml.includes('row.value.indexOf("accent=") === 0'))
 })
 
-test("the About row opens the repository, its text from the manifest", () => {
+test("the version pill and GitHub icon sit in the header beside the gear, on the Settings page only", () => {
+  assert.ok(qml.includes("id: aboutBox"))
+  assert.ok(qml.includes('visible: root.settings.about && root.version !== "" && gearButton.active'))
+  assert.ok(qml.includes("https://github.com/thevideinfra/omarunner"))
+  assert.ok(qml.includes("anchors.right: aboutBox.visible ? aboutBox.left : gearButton.left"))
   assert.ok(qml.includes("root.fileVersion || String(root.manifest && root.manifest.version"))
   assert.ok(qml.includes('Qt.resolvedUrl("manifest.json")'))
-  assert.ok(qml.includes("https://github.com/thevideinfra/omarunner"))
+  assert.equal(qml.includes("var about = {"), false)
 })

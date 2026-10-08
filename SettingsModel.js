@@ -170,10 +170,9 @@ function menuRow(id, parent, label, order) {
 // Page entries are alphabetical by name; a submenu's choices keep their
 // preset order (Narrow, Normal, Wide...).
 // setupCommand: shell command that opens the keybinding wizard; when given,
-// a "Keybindings…" row runs it. about: { version, openCommand }; with the
-// "about" setting on, a first row shows the name and version with a GitHub
-// icon and opens the repository.
-function pageRows(settingsIn, setupCommand, about) {
+// a "Keybindings…" row runs it. (The version and GitHub link is a header item
+// in Runner.qml, switched by the "about" setting.)
+function pageRows(settingsIn, setupCommand) {
   var settings = settingsIn || defaults()
   var entries = []
   var checked = ({})
@@ -214,12 +213,6 @@ function pageRows(settingsIn, setupCommand, about) {
   }
   entries.sort(function(a, b) { return a.name.localeCompare(b.name) })
   var rows = []
-  if (about && about.openCommand && settings.about !== false) {
-    rows.push({ id: PAGE_ID() + ".github", parent: PAGE_ID(), kind: "action", icon: "\uf09b", iconFont: "",
-      label: "omarunner" + (about.version ? " · v" + about.version : ""), title: "", target: "",
-      description: "Open the project on GitHub", action: about.openCommand, provider: "", aliases: [], when: "",
-      checked: "", order: 0 })
-  }
   for (var e = 0; e < entries.length; e++) {
     for (var r = 0; r < entries[e].rows.length; r++) rows.push(entries[e].rows[r])
   }

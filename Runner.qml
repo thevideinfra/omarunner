@@ -19,7 +19,6 @@ Item {
   // manifest.json (the host's injected manifest, when present, is the fallback).
   property string fileVersion: ""
   readonly property string version: root.fileVersion || String(root.manifest && root.manifest.version || "")
-  onVersionChanged: if (root.rowsLoaded) root.refreshSourcePage()
 
   // Plugin lifecycle hooks. The host calls open(payloadJson) after
   // `omarchy-shell shell summon videinfra.omarunner ...` and close() when hidden.
@@ -715,11 +714,8 @@ Item {
     // startup, before that binding has a value.
     // "Keybindings…" opens the setup wizard in a floating terminal.
     var setup = Quickshell.env("HOME") + "/.config/omarchy/plugins/videinfra.omarunner/bin/omarunner-setup"
-    // The first row names the plugin, its version, and opens the repository.
-    var about = { version: root.version,
-      openCommand: "xdg-open " + Util.shellQuote("https://github.com/thevideinfra/omarunner") }
     var page = SettingsModel.pageRows(SettingsModel.resolve(sourceConfig.config),
-      "omarchy-launch-floating-terminal-with-presentation " + Util.shellQuote(setup), about)
+      "omarchy-launch-floating-terminal-with-presentation " + Util.shellQuote(setup))
     for (var p = 0; p < page.rows.length; p++) {
       page.rows[p].order = order.length
       items[page.rows[p].id] = page.rows[p]
@@ -1360,6 +1356,64 @@ Item {
             font.pixelSize: root.fontBody
           }
 
+          // Version and GitHub link, beside the gear while Settings is open
+          // (Settings → Version and GitHub link turns it off).
+          Row {
+            id: aboutBox
+            visible: root.settings.about && root.version !== "" && gearButton.active
+            anchors.right: gearButton.left
+            anchors.rightMargin: Style.space(6)
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: Style.space(6)
+
+            Rectangle {
+              anchors.verticalCenter: parent.verticalCenter
+              width: versionText.implicitWidth + Style.space(12)
+              height: versionText.implicitHeight + Style.space(4)
+              radius: height / 2
+              color: Util.alpha(root.accent, 0.18)
+              border.width: 1
+              border.color: root.accent
+
+              Text {
+                id: versionText
+                anchors.centerIn: parent
+                textFormat: Text.PlainText
+                text: "v" + root.version
+                color: root.accent
+                font.family: root.textFamily
+                font.pixelSize: root.fontCaption
+                font.bold: true
+              }
+            }
+
+            Rectangle {
+              anchors.verticalCenter: parent.verticalCenter
+              width: root.headerHeight
+              height: root.headerHeight
+              radius: root.cornerRadius
+              color: githubMouse.containsMouse ? Util.alpha(root.foreground, 0.08) : "transparent"
+
+              Text {
+                anchors.centerIn: parent
+                textFormat: Text.PlainText
+                text: "\uf09b"
+                color: root.foreground
+                opacity: githubMouse.containsMouse ? 1 : 0.7
+                font.family: root.fontFamily
+                font.pixelSize: root.fontTitle
+              }
+
+              MouseArea {
+                id: githubMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.applySelected("github", "xdg-open " + Util.shellQuote("https://github.com/thevideinfra/omarunner"))
+              }
+            }
+          }
+
           // Settings gear: size, font, look and fuzzy matching.
           Rectangle {
             id: gearButton
@@ -1394,7 +1448,7 @@ Item {
             textFormat: Text.PlainText
             anchors.left: searchGlyph.right
             anchors.leftMargin: Style.space(10)
-            anchors.right: gearButton.left
+            anchors.right: aboutBox.visible ? aboutBox.left : gearButton.left
             anchors.rightMargin: Style.space(8)
             anchors.verticalCenter: parent.verticalCenter
             text: root.filterText || ((root.activeMenu === "root")

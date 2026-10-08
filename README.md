@@ -260,8 +260,9 @@ then pick the **Use …** row.
 
 The **accent colour** is the theme's own by default; pick another colour from the
 theme's palette, or type a hex colour. It colours the selected row, the
-ON/OFF badges and the choice dots. The first row of the page shows the version
-and opens the project on GitHub; turn it off with **Version and GitHub link**.
+ON/OFF badges and the choice dots. While Settings is open, the header shows the
+version and a GitHub icon beside the gear; the icon opens the project on GitHub.
+Turn it off with **Version and GitHub link**.
 
 Both pages are stored in `~/.config/omarchy/omarunner.json` (`sources`,
 `settings`, and `webSearchUrl` for the fallback web search, DuckDuckGo by
