@@ -398,3 +398,10 @@ test("choosing Custom… switches the page into a typing mode that shows it", ()
   assert.ok(qml.includes("id: customInput"))
   assert.ok(qml.includes('row.kind === "setting-custom" && root.editingCustom'))
 })
+
+test("the Sources and Settings pages show chevrons where the list scrolls", () => {
+  assert.ok(qml.includes('readonly property bool pageScrollHints: root.inPage("sources") || root.inPage("omarunner-settings")'))
+  assert.ok(qml.includes("id: scrollUpChevron"))
+  assert.ok(qml.includes("id: scrollDownChevron"))
+  assert.equal((qml.match(/visible: root\.pageScrollHints/g) || []).length, 2)
+})

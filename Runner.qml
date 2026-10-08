@@ -81,6 +81,9 @@ Item {
   // Set once the Custom… row of a setting is chosen: the page then asks for
   // the value (header prompt, caret, an input box on the row).
   property bool customEditing: false
+  // Chevrons at the list's edges on the Sources and Settings pages, so a short
+  // list there is known to scroll.
+  readonly property bool pageScrollHints: root.inPage("sources") || root.inPage("omarunner-settings")
   readonly property bool editingCustom: root.customEditing && root.activeMenu.indexOf("omarunner-settings.") === 0
   property var items: ({})
   property var itemOrder: []
@@ -1804,6 +1807,19 @@ Item {
               GradientStop { position: 0; color: root.background }
               GradientStop { position: 1; color: Util.alpha(root.background, 0) }
             }
+
+            // Fades in and out with the scrim: only while rows hide above.
+            Text {
+              id: scrollUpChevron
+              visible: root.pageScrollHints
+              anchors.top: parent.top
+              anchors.horizontalCenter: parent.horizontalCenter
+              textFormat: Text.PlainText
+              text: "\uf077"
+              color: root.accent
+              font.family: root.fontFamily
+              font.pixelSize: root.fontCaption
+            }
           }
 
           Rectangle {
@@ -1818,6 +1834,19 @@ Item {
             gradient: Gradient {
               GradientStop { position: 0; color: Util.alpha(root.background, 0) }
               GradientStop { position: 1; color: root.background }
+            }
+
+            // Fades with the scrim: only while rows hide below.
+            Text {
+              id: scrollDownChevron
+              visible: root.pageScrollHints
+              anchors.bottom: parent.bottom
+              anchors.horizontalCenter: parent.horizontalCenter
+              textFormat: Text.PlainText
+              text: "\uf078"
+              color: root.accent
+              font.family: root.fontFamily
+              font.pixelSize: root.fontCaption
             }
           }
 
