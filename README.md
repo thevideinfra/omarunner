@@ -275,9 +275,16 @@ which omarunner deliberately does not implement.
 ## Credits
 
 omarunner is a fork of the `omarchy.menu` plugin from
-[Omarchy](https://github.com/omacom/omarchy), MIT licensed, copyright David
-Heinemeier Hansson; see `LICENSE`. The launcher design borrows from KDE's
+[Omarchy](https://github.com/omacom/omarchy) by David Heinemeier Hansson, and
+would not exist without it. `Runner.qml` and `RunnerModel.js` descend from
+Omarchy's `Menu.qml` and `MenuModel.js`, and `upstream/` keeps the unmodified
+originals to track changes. Omarchy is MIT licensed; its copyright notice and
+license text are in [`NOTICE`](NOTICE). The launcher design borrows from KDE's
 KRunner and the COSMIC launcher.
+
+## License
+
+MIT, see [`LICENSE`](LICENSE). Third-party notices are in [`NOTICE`](NOTICE).
 
 ## Verified on
 
