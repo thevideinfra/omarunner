@@ -221,8 +221,8 @@ Folders, Files and Recent. A search that matches nothing offers a web search.
 | Clipboard | `cb`, `cb git`, `cb scr` (images), `cb list` | paste into the previous window | copy only |
 | Web | `dd query`, `gg query`, `yt query`, `wiki query` | open in the browser | copy the URL |
 
-Prefixes (`cb`, `>`, `kill`, `dd`/`gg`/`yt`/`wiki` followed by a query) hand the
-whole list to that one source. Clipboard history appears only behind `cb`, so
+Prefixes (`cb`, `>`, `kill`, `recent`, `dd`/`gg`/`yt`/`wiki` followed by a query)
+hand the whole list to that one source. Clipboard history appears only behind `cb`, so
 copied secrets never show in an ordinary search.
 
 Folder names forgive case and small typos. With fuzzy matching on (the

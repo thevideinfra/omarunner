@@ -6,8 +6,7 @@ import qs.Commons
 // one of the other colours in the current theme's palette (blue, cyan, green,
 // ...), read from the theme's colors.toml, or a typed #rrggbb. A palette choice
 // is stored by name, so it follows a theme change, and falls back to the
-// theme accent where the new theme has no such colour. Same idea as Tandem's
-// and omaudiopanel's accent pickers.
+// theme accent where the new theme has no such colour.
 Item {
   id: root
 
