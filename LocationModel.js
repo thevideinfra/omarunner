@@ -1,9 +1,11 @@
 // Locations source: a query that is a URL or a filesystem path opens directly.
 // Bare hosts need a known TLD, so "notes.md" or "setup.sh" stay file names.
+// ".in" and ".pl" are left out on purpose: they are real countries, but
+// "Makefile.in" and "script.pl" are far more likely to be files.
 function KNOWN_TLDS() {
   return ["com", "org", "net", "io", "dev", "app", "ai", "co", "uk", "de", "edu", "gov", "me", "tv", "gg",
-    "xyz", "info", "fr", "nl", "eu", "us", "ca", "jp", "au", "nz", "ch", "se", "no", "fi", "dk", "pl", "it",
-    "es", "be", "at", "br", "in", "ru", "cn", "tech", "site", "online", "blog", "cloud", "page", "social", "wiki"]
+    "xyz", "info", "fr", "nl", "eu", "us", "ca", "jp", "au", "nz", "ch", "se", "no", "fi", "dk", "it",
+    "es", "be", "at", "br", "ru", "cn", "tech", "site", "online", "blog", "cloud", "page", "social", "wiki"]
 }
 
 function classify(query, home) {

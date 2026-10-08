@@ -255,3 +255,8 @@ test("a command ending in & or a comment still runs and keeps the terminal open"
     assert.equal(spawnSync("bash", ["-n", "-c", script]).status, 0, cmd)
   }
 })
+
+test("common file extensions are not mistaken for web addresses", () => {
+  for (const q of ["script.pl", "config.in", "Makefile.in", "run.pl"]) assert.equal(L.classify(q, HOME), null, q)
+  assert.deepEqual(L.classify("github.com", HOME), { kind: "url", url: "https://github.com" })
+})
