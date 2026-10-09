@@ -252,9 +252,9 @@ The **Omarunner Sources** page (filter button, `Ctrl+,`) lists every search sour
 Omarchy and Session can be switched off the same way.
 
 The **Omarunner Settings** page (gear, `Ctrl+S`) holds: accent colour, border,
-category column, corner radius, Ctrl+number hints, Favorites, font, fuzzy
+category column, corner radius, Ctrl+number hints, Favorites, favorites shown, font, fuzzy
 matching, hint size, location, opacity, recent launches, row height, rows before
-scrolling, show favorites, text size, the version and GitHub link, and width. On/off settings show an **ON**/**OFF** badge after their
+scrolling, text size, the version and GitHub link, and width. On/off settings show an **ON**/**OFF** badge after their
 name; a choice (open it to see the presets, the current one has a dot) offers
 presets and a **Custom…** entry: open the setting and type a value (a number in
 the range the row names, a font name, or a `#rrggbb` colour for the accent),
@@ -272,7 +272,7 @@ top, a fifth of the way down; results grow downward from there.
 **Favorites** are results you pin with `Ctrl+P` (apps, files, folders, menu
 entries). They are listed under a *Favorites* heading whenever omarunner opens
 with nothing typed. Settings → Favorites lists them: Enter unpins one, and
-`Ctrl+Up` / `Ctrl+Down` reorders. **Show favorites** (Off, 3, 5, 8 or All; All by
+`Ctrl+Up` / `Ctrl+Down` reorders. **Favorites shown** (Off, 3, 5, 8 or All; All by
 default) sets how many appear at the start.
 
 **Recent launches** (off by default; show 3, 5 or 8) lists what you launched

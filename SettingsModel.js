@@ -8,7 +8,7 @@ function CHOICES() {
       { value: "red", label: "Red" }, { value: "orange", label: "Orange" }] },
     { key: "location", label: "Location", choices: [
       { value: "center", label: "Center" }, { value: "top", label: "Top" }] },
-    { key: "favoritesShown", label: "Show favorites", choices: [
+    { key: "favoritesShown", label: "Favorites shown", choices: [
       { value: 0, label: "Off" }, { value: 3, label: "3" }, { value: 5, label: "5" }, { value: 8, label: "8" }, { value: 30, label: "All" }] },
     { key: "recents", label: "Recent launches", choices: [
       { value: 0, label: "Off" }, { value: 3, label: "3" }, { value: 5, label: "5" }, { value: 8, label: "8" }] },
