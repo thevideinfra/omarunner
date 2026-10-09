@@ -423,8 +423,9 @@ test("Ctrl+P pins and Ctrl+Up/Down reorders favorites", () => {
 
 test("top location sits a fifth down", () => {
   const src = qml
-  assert.match(src, /settings\.location === "top" \? topLocationY/)
+  assert.match(src, /locationY >= 0 \? locationY/)
   assert.match(src, /Math\.round\(height \* 0\.18\)/)
+  for (const place of ["edge", "high", "top", "low"]) assert.ok(src.includes('case "' + place + '"'), place)
 })
 
 test("the root never caps search height by its start list", () => {

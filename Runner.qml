@@ -248,7 +248,7 @@ Item {
   // Uses panel.cardTop rather than effectiveCardTop: the centered top is
   // derived from the card height, which this value feeds.
   function availableRowsHeight() {
-    var top = panel.cardTop >= 0 ? panel.cardTop : (root.settings.location === "top" ? panel.topLocationY : Style.gapsOut)
+    var top = panel.cardTop >= 0 ? panel.cardTop : (panel.locationY >= 0 ? panel.locationY : Style.gapsOut)
     var available = panel.height - top - Style.gapsOut - root.contentMargin * 2 - root.headerHeight - root.contentSpacing
     // For a submenu, the starting menu sets the ceiling along with the offset:
     // drilling deeper scrolls behind the fold instead of growing the card. On
@@ -1238,10 +1238,22 @@ Item {
     // both.
     property int cardTop: -1
     property int maxRowsHeight: -1
-    // Settings → Location "top": the card sits a fifth of the way down and
-    // grows downward, so the input line stays put as results appear.
-    readonly property int topLocationY: Math.max(Style.gapsOut, Math.round(height * 0.18))
-    readonly property int centeredTop: root.settings.location === "top" ? topLocationY
+    // Settings → Location. Anything but "center" pins the card's top line
+    // and lets it grow downward, so the input line stays put as results appear:
+    // "edge" sits just under the bar, "top" a fifth of the screen down, "high"
+    // halfway between those two, "low" about a third down.
+    readonly property int edgeY: Style.bar.sizeHorizontal + Style.gapsOut * 2
+    readonly property int topLocationY: Math.max(edgeY, Math.round(height * 0.18))
+    readonly property int locationY: {
+      switch (root.settings.location) {
+      case "edge": return edgeY
+      case "high": return Math.round((edgeY + topLocationY) / 2)
+      case "top": return topLocationY
+      case "low": return Math.max(topLocationY, Math.round(height * 0.32))
+      default: return -1
+      }
+    }
+    readonly property int centeredTop: locationY >= 0 ? locationY
       : Math.max(Style.gapsOut, Math.round((height - root.cardHeight) / 2))
     readonly property int effectiveCardTop: cardTop >= 0 ? cardTop : centeredTop
     // A root start screen (bare input line, or the few Favorites and recent

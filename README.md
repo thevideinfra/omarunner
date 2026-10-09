@@ -266,8 +266,9 @@ ON/OFF badges and the choice dots. While Settings is open, the header shows the
 version and a GitHub icon beside the gear; the icon opens the project on GitHub.
 Turn it off with **Version and GitHub link**.
 
-**Location** puts the launcher in the centre of the screen (default) or at the
-top, a fifth of the way down; results grow downward from there.
+**Location** puts the launcher in the centre of the screen (default), or higher
+up: Low (about a third down), Top (a fifth down), High (halfway between Top and
+the bar) or Very top (just under the bar). Results grow downward from there.
 
 **Favorites** are results you pin with `Ctrl+P` (apps, files, folders, menu
 entries). They are listed under a *Favorites* heading whenever omarunner opens
