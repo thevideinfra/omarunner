@@ -545,7 +545,8 @@ Item {
   // Favorites and recent launches for an empty root; the Recent launches
   // setting picks how many (0 = off).
   function startGroups() {
-    return HistoryModel.startGroups(historyStore.favorites, historyStore.history, root.settings.recents, root.settings.favoritesShown)
+    return HistoryModel.startGroups(historyStore.favorites, historyStore.history,
+      root.settings.recentsOn ? root.settings.recents : 0, root.settings.favoritesOn ? root.settings.favoritesShown : 0)
   }
 
   // Ctrl+P: pin or unpin the highlighted result.
@@ -1590,6 +1591,9 @@ Item {
               readonly property bool isAccentChoice: row.kind === "setting-option" && row.value.indexOf("accent=") === 0
               readonly property bool hasCursor: root.cursorActive && row.index === root.selectedIndex
               readonly property bool isApp: row.kind === "app"
+              // Settings submenus with their own on/off (Favorites, Recent launches).
+              readonly property bool isSwitchedMenu: row.kind === "menu" && row.itemId.indexOf("omarunner-settings.") === 0
+                && root.checkedResults[row.itemId] !== undefined
               // Pinned results carry a star in a search; the start list has its own heading.
               readonly property bool pinned: root.activeMenu === "root" && row.section.indexOf("start:") !== 0
                 && HistoryModel.isFavorite(historyStore.favorites, HistoryModel.keyFor(
@@ -1708,7 +1712,7 @@ Item {
                   }
 
                   StateBadge {
-                    visible: row.kind === "setting-toggle"
+                    visible: row.kind === "setting-toggle" || row.isSwitchedMenu
                     on: root.checkedResults[row.itemId] === true
                     textColor: row.textColor
                     anchors.left: labelText.right

@@ -5,7 +5,7 @@ const S = await loadJsModule("SettingsModel.js")
 
 test("defaults match the tuned launcher", () => {
   assert.deepEqual(S.resolve({}), { width: 420, rows: 9, density: 28, fontScale: 85, hintScale: 100, fontFamily: "", border: 2,
-    opacity: 100, radius: -1, accent: "theme", location: "center", recents: 0, favoritesShown: 30,
+    opacity: 100, radius: -1, accent: "theme", location: "center", recents: 5, recentsOn: false, favoritesShown: 30, favoritesOn: true,
     fuzzy: true, categories: true, hints: true, about: true })
 })
 
@@ -217,18 +217,35 @@ test("location defaults to the center and offers the top", () => {
   assert.equal(S.applyOption({}, "location=top").settings.location, "top")
 })
 
-test("recent launches are off by default, with 3, 5 and 8 and a custom range", () => {
-  assert.equal(S.resolve({}).recents, 0)
-  assert.equal(S.currentLabel("recents", 0), "Off")
-  assert.equal(S.resolve({ settings: { recents: 5 } }).recents, 5)
+test("recent launches are off by default; the amount is 3, 5 or 8 and a custom range", () => {
+  assert.equal(S.resolve({}).recentsOn, false)
+  assert.equal(S.resolve({}).recents, 5)
+  assert.equal(S.currentLabel("recents", 5), "5")
   assert.equal(S.resolve({ settings: { recents: 12 } }).recents, 12)
-  assert.equal(S.resolve({ settings: { recents: 99 } }).recents, 0)
+  assert.equal(S.resolve({ settings: { recents: 99 } }).recents, 5)
   const page = S.pageRows(S.defaults())
-  assert.equal(page.rows.find(r => r.id === "omarunner-settings.recents").label, "Recent launches · Off")
-  const options = page.rows.filter(r => r.parent === "omarunner-settings.recents" && r.kind === "setting-option")
-  assert.deepEqual(options.map(r => r.label), ["Off", "3", "5", "8"])
-  assert.equal(S.applyOption({}, "recents=0").settings.recents, 0)
+  const menu = page.rows.find(r => r.id === "omarunner-settings.launches")
+  assert.equal(menu.label, "Recent launches")
+  assert.equal(menu.parent, "omarunner-settings")
+  assert.equal(page.checked["omarunner-settings.launches"], false)
+  const inside = page.rows.filter(r => r.parent === "omarunner-settings.launches")
+  assert.deepEqual(inside.map(r => [r.kind, r.label]), [["setting-toggle", "Show on start"], ["menu", "Amount · 5"]])
+  assert.equal(inside[0].value, "recentsOn")
+  const amountOptions = page.rows.filter(r => r.parent === inside[1].id && r.kind === "setting-option")
+  assert.deepEqual(amountOptions.map(r => r.label), ["3", "5", "8"])
   assert.deepEqual(S.customChoice("recents", "10"), { value: 10, label: "10" })
+  assert.equal(S.customChoice("recents", "0"), null)
+  assert.equal(S.toggled({}, "recentsOn").settings.recentsOn, true)
+})
+
+test("settings saved before the switches existed keep their meaning", () => {
+  assert.equal(S.resolve({ settings: { recents: 0 } }).recentsOn, false)
+  assert.equal(S.resolve({ settings: { recents: 0 } }).recents, 5)
+  const on = S.resolve({ settings: { recents: 8 } })
+  assert.deepEqual([on.recentsOn, on.recents], [true, 8])
+  const favOff = S.resolve({ settings: { favoritesShown: 0 } })
+  assert.deepEqual([favOff.favoritesOn, favOff.favoritesShown], [false, 30])
+  assert.deepEqual([S.resolve({ settings: { favoritesShown: 3 } }).favoritesOn, S.resolve({ settings: { favoritesShown: 3 } }).favoritesShown], [true, 3])
 })
 
 test("the Favorites entry lists the pinned items, or says how to pin one", () => {
@@ -237,13 +254,12 @@ test("the Favorites entry lists the pinned items, or says how to pin one", () =>
     { key: "source:files:/a.txt", kind: "source", label: "a.txt", detail: "docs/a.txt", sourceId: "files", value: "/a.txt" }
   ]
   const page = S.pageRows(S.defaults(), "", favorites)
-  assert.equal(page.rows.find(r => r.id === "omarunner-settings.favorites").label, "Favorites · 2")
-  const items = page.rows.filter(r => r.parent === "omarunner-settings.favorites")
+  assert.equal(page.rows.find(r => r.id === "omarunner-settings.favorites").label, "Favorites")
+  const items = page.rows.filter(r => r.parent === "omarunner-settings.favorites" && r.kind === "favorite-item")
   assert.deepEqual(items.map(r => [r.kind, r.label, r.value]), [["favorite-item", "Firefox", "app:firefox"], ["favorite-item", "a.txt", "source:files:/a.txt"]])
   assert.equal(items[1].description, "docs/a.txt")
   const empty = S.pageRows(S.defaults(), "", [])
-  assert.equal(empty.rows.find(r => r.id === "omarunner-settings.favorites").label, "Favorites · none")
-  const note = empty.rows.filter(r => r.parent === "omarunner-settings.favorites")
+    const note = empty.rows.filter(r => r.parent === "omarunner-settings.favorites" && r.kind === "note")
   assert.deepEqual(note.map(r => [r.kind, r.label]), [["note", "No favorites yet"]])
   assert.equal(note[0].description, "Press Ctrl+P on a result to pin it")
   const top = page.rows.filter(r => r.parent === "omarunner-settings").map(r => r.label.split(" · ")[0])
@@ -251,12 +267,15 @@ test("the Favorites entry lists the pinned items, or says how to pin one", () =>
   assert.deepEqual(page.rows.map(r => r.order), page.rows.map((_, i) => i))
 })
 
-test("show favorites defaults to all, with Off, 3, 5, 8 and a custom range", () => {
+test("favorites switch on by default; the amount is 3, 5, 8 or All", () => {
+  assert.equal(S.resolve({}).favoritesOn, true)
   assert.equal(S.resolve({}).favoritesShown, 30)
   assert.equal(S.currentLabel("favoritesShown", 30), "All")
-  assert.equal(S.resolve({ settings: { favoritesShown: 0 } }).favoritesShown, 0)
   assert.equal(S.resolve({ settings: { favoritesShown: 4 } }).favoritesShown, 4)
   const page = S.pageRows(S.defaults())
+  assert.equal(page.checked["omarunner-settings.favorites"], true)
+  const inside = page.rows.filter(r => r.parent === "omarunner-settings.favorites")
+  assert.deepEqual(inside.slice(0, 2).map(r => [r.kind, r.label]), [["setting-toggle", "Show on start"], ["menu", "Amount · All"]])
   const options = page.rows.filter(r => r.parent === "omarunner-settings.favoritesShown" && r.kind === "setting-option")
-  assert.deepEqual(options.map(r => r.label), ["Off", "3", "5", "8", "All"])
+  assert.deepEqual(options.map(r => r.label), ["3", "5", "8", "All"])
 })

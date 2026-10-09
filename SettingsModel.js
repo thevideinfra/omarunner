@@ -8,10 +8,10 @@ function CHOICES() {
       { value: "red", label: "Red" }, { value: "orange", label: "Orange" }] },
     { key: "location", label: "Location", choices: [
       { value: "center", label: "Center" }, { value: "top", label: "Top" }] },
-    { key: "favoritesShown", label: "Favorites shown", choices: [
-      { value: 0, label: "Off" }, { value: 3, label: "3" }, { value: 5, label: "5" }, { value: 8, label: "8" }, { value: 30, label: "All" }] },
-    { key: "recents", label: "Recent launches", choices: [
-      { value: 0, label: "Off" }, { value: 3, label: "3" }, { value: 5, label: "5" }, { value: 8, label: "8" }] },
+    { key: "favoritesShown", label: "Amount", under: "favorites", choices: [
+      { value: 3, label: "3" }, { value: 5, label: "5" }, { value: 8, label: "8" }, { value: 30, label: "All" }] },
+    { key: "recents", label: "Amount", under: "launches", choices: [
+      { value: 3, label: "3" }, { value: 5, label: "5" }, { value: 8, label: "8" }] },
     { key: "width", label: "Width", choices: [
       { value: 300, label: "Narrow" }, { value: 420, label: "Normal" },
       { value: 510, label: "Wide" }, { value: 680, label: "Extra wide" }] },
@@ -42,7 +42,7 @@ function PAGE_ID() { return "omarunner-settings" }
 
 function RANGES() {
   return { width: [300, 1600], rows: [3, 20], density: [18, 48], fontScale: [50, 200], hintScale: [50, 200], border: [0, 10],
-    opacity: [30, 100], radius: [0, 30], recents: [0, 20], favoritesShown: [0, 30] }
+    opacity: [30, 100], radius: [0, 30], recents: [1, 20], favoritesShown: [1, 30] }
 }
 
 function inRange(key, value) {
@@ -55,12 +55,14 @@ function TOGGLES() {
     { key: "fuzzy", label: "Fuzzy matching" },
     { key: "categories", label: "Category column" },
     { key: "hints", label: "Ctrl+number hints" },
+    { key: "favoritesOn", label: "Show on start", under: "favorites" },
+    { key: "recentsOn", label: "Show on start", under: "launches" },
     { key: "about", label: "Version and GitHub link" }
   ]
 }
 
 function defaults() {
-  return { width: 420, rows: 9, density: 28, fontScale: 85, hintScale: 100, fontFamily: "", border: 2, opacity: 100, radius: -1, accent: "theme", location: "center", recents: 0, favoritesShown: 30, fuzzy: true, categories: true, hints: true, about: true }
+  return { width: 420, rows: 9, density: 28, fontScale: 85, hintScale: 100, fontFamily: "", border: 2, opacity: 100, radius: -1, accent: "theme", location: "center", recents: 5, recentsOn: false, favoritesShown: 30, favoritesOn: true, fuzzy: true, categories: true, hints: true, about: true }
 }
 
 function choiceFor(key) {
@@ -76,6 +78,10 @@ function resolve(config) {
   var out = defaults()
   var given = config && config.settings && typeof config.settings === "object" && !Array.isArray(config.settings) ? config.settings : ({})
   var list = CHOICES()
+  // Earlier versions kept the on/off state in the amount: 0 meant off.
+  if (given.recents === 0 && !("recentsOn" in given)) { given = withKey(given, "recentsOn", false); delete given.recents }
+  else if (typeof given.recents === "number" && given.recents > 0 && !("recentsOn" in given)) given = withKey(given, "recentsOn", true)
+  if (given.favoritesShown === 0 && !("favoritesOn" in given)) { given = withKey(given, "favoritesOn", false); delete given.favoritesShown }
   for (var i = 0; i < list.length; i++) {
     var key = list[i].key
     if (!(key in given)) continue
@@ -92,6 +98,13 @@ function resolve(config) {
   var toggles = TOGGLES()
   for (var t = 0; t < toggles.length; t++) if (typeof given[toggles[t].key] === "boolean") out[toggles[t].key] = given[toggles[t].key]
   return out
+}
+
+function withKey(object, key, value) {
+  var copy = ({})
+  for (var k in object) copy[k] = object[k]
+  copy[key] = value
+  return copy
 }
 
 function withSetting(config, key, value) {
@@ -186,12 +199,15 @@ function pageRows(settingsIn, setupCommand, favorites) {
   var entries = []
   var checked = ({})
   var list = CHOICES()
-  for (var i = 0; i < list.length; i++) {
-    var key = list[i].key
+
+  // A choice submenu (its label shows the current value) with its presets and
+  // Custom… row, under `parentId`.
+  function choiceGroup(item, parentId) {
+    var key = item.key
     var menuId = PAGE_ID() + "." + key
-    var group = [menuRow(menuId, PAGE_ID(), list[i].label + " · " + currentLabel(key, settings[key]), 0)]
-    for (var c = 0; c < list[i].choices.length; c++) {
-      var choice = list[i].choices[c]
+    var group = [menuRow(menuId, parentId, item.label + " · " + currentLabel(key, settings[key]), 0)]
+    for (var c = 0; c < item.choices.length; c++) {
+      var choice = item.choices[c]
       var id = menuId + "." + c
       // Accent choices show their colour as a dot in the row's icon spot.
       group.push({ id: id, parent: menuId, kind: "setting-option", icon: key === "accent" ? "●" : "", iconFont: "", label: choice.label, title: "",
@@ -205,35 +221,59 @@ function pageRows(settingsIn, setupCommand, favorites) {
       target: "", description: customHint(key), action: "", provider: "", aliases: [], when: "", checked: "config",
       value: key, order: 0 })
     if (hasCustom(key)) checked[customId] = !isPreset(key, settings[key])
-    entries.push({ name: list[i].label, rows: group })
+    return group
+  }
+
+  function toggleRow(toggle, parentId) {
+    var toggleId = PAGE_ID() + "." + toggle.key
+    checked[toggleId] = settings[toggle.key] === true
+    return { id: toggleId, parent: parentId, kind: "setting-toggle", icon: "", iconFont: "", label: toggle.label, title: "",
+      target: "", description: "", action: "", provider: "", aliases: [], when: "", checked: "config", value: toggle.key, order: 0 }
+  }
+
+  // A menu row that wears an ON/OFF badge, with its on/off switch and amount
+  // inside, followed by `extra` rows.
+  function switchedEntry(name, under, onKey, extra) {
+    var menuId = PAGE_ID() + "." + under
+    var rows = [menuRow(menuId, PAGE_ID(), name, 0)]
+    checked[menuId] = settings[onKey] === true
+    var toggles = TOGGLES()
+    for (var t = 0; t < toggles.length; t++) if (toggles[t].key === onKey) rows.push(toggleRow(toggles[t], menuId))
+    for (var i = 0; i < list.length; i++) if (list[i].under === under) rows = rows.concat(choiceGroup(list[i], menuId))
+    return { name: name, rows: rows.concat(extra || []) }
+  }
+
+  for (var i = 0; i < list.length; i++) {
+    if (list[i].under) continue
+    entries.push({ name: list[i].label, rows: choiceGroup(list[i], PAGE_ID()) })
   }
   var toggles = TOGGLES()
   for (var t = 0; t < toggles.length; t++) {
-    var toggleId = PAGE_ID() + "." + toggles[t].key
-    entries.push({ name: toggles[t].label, rows: [{ id: toggleId, parent: PAGE_ID(), kind: "setting-toggle", icon: "",
-      iconFont: "", label: toggles[t].label, title: "", target: "", description: "", action: "", provider: "",
-      aliases: [], when: "", checked: "config", value: toggles[t].key, order: 0 }] })
-    checked[toggleId] = settings[toggles[t].key] === true
+    if (toggles[t].under) continue
+    entries.push({ name: toggles[t].label, rows: [toggleRow(toggles[t], PAGE_ID())] })
   }
-  // Favorites: the pinned items, removable here; or a note on how to pin one.
+
+  // Favorites: on/off, how many show, then the pinned items (removable here),
+  // or a note on how to pin one.
   var pinned = Array.isArray(favorites) ? favorites : []
   var favId = PAGE_ID() + ".favorites"
-  var favGroup = [menuRow(favId, PAGE_ID(), "Favorites · " + (pinned.length ? pinned.length : "none"), 0)]
+  var pins = []
   if (pinned.length === 0) {
-    favGroup.push({ id: favId + ".none", parent: favId, kind: "note", icon: "", iconFont: "", label: "No favorites yet", title: "",
+    pins.push({ id: favId + ".none", parent: favId, kind: "note", icon: "", iconFont: "", label: "No favorites yet", title: "",
       target: "", description: "Press Ctrl+P on a result to pin it", action: "", provider: "", aliases: [], when: "", checked: "",
       value: "", order: 0 })
   }
   for (var p = 0; p < pinned.length; p++) {
-    favGroup.push({ id: favId + "." + p, parent: favId, kind: "favorite-item", icon: "", iconFont: "", label: String(pinned[p].label || ""),
+    pins.push({ id: favId + "." + p, parent: favId, kind: "favorite-item", icon: "", iconFont: "", label: String(pinned[p].label || ""),
       title: "", target: "", description: String(pinned[p].detail || ""), action: "", provider: "", aliases: [], when: "",
       checked: "", value: String(pinned[p].key || ""), order: 0 })
   }
-  entries.push({ name: "Favorites", rows: favGroup })
+  entries.push(switchedEntry("Favorites", "favorites", "favoritesOn", pins))
+  entries.push(switchedEntry("Recent launches", "launches", "recentsOn", []))
   if (setupCommand) {
     entries.push({ name: "Keybindings", rows: [{ id: PAGE_ID() + ".keys", parent: PAGE_ID(), kind: "action", icon: "",
       iconFont: "", label: "Keybindings…", title: "", target: "", description: "Choose the keys that open omarunner",
-      action: setupCommand, provider: "", aliases: [], when: "", checked: "", order: 0 }] })
+      action: setupCommand, provider: "", aliases: [], when: "", checked: "", value: "", order: 0 }] })
   }
   entries.sort(function(a, b) { return a.name.localeCompare(b.name) })
   var rows = []
