@@ -213,7 +213,7 @@ test("location defaults to the center and offers the top", () => {
   assert.equal(S.resolve({ settings: { location: "bottom" } }).location, "center")
   const page = S.pageRows(S.defaults())
   const options = page.rows.filter(r => r.parent === "omarunner-settings.location" && r.kind === "setting-option")
-  assert.deepEqual(options.map(r => r.label + "=" + r.value), ["Center=location=center", "Low=location=low", "Top=location=top", "High=location=high", "Very top=location=edge"])
+  assert.deepEqual(options.map(r => r.label + "=" + r.value), ["Very top=location=edge", "Almost top=location=high", "Upper=location=top", "High center=location=low", "Center=location=center"])
   assert.equal(S.applyOption({}, "location=top").settings.location, "top")
 })
 

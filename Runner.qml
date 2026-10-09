@@ -1240,8 +1240,9 @@ Item {
     property int maxRowsHeight: -1
     // Settings → Location. Anything but "center" pins the card's top line
     // and lets it grow downward, so the input line stays put as results appear:
-    // "edge" sits just under the bar, "top" a fifth of the screen down, "high"
-    // halfway between those two, "low" about a third down.
+    // "edge" (Very top) sits just under the bar, "top" (Upper) a fifth of the
+    // screen down, "high" (Almost top) halfway between those two, "low" (High
+    // center) about a third down.
     readonly property int edgeY: Style.bar.sizeHorizontal + Style.gapsOut * 2
     readonly property int topLocationY: Math.max(edgeY, Math.round(height * 0.18))
     readonly property int locationY: {
