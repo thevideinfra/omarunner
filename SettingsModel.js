@@ -150,13 +150,23 @@ function customChoice(key, text) {
   return { value: value, label: percent ? value + "%" : String(value) }
 }
 
+// The setting a settings menu edits: its own key, or for the Favorites and
+// Recent launches pages (which list their amounts inline) the amount's key.
+function keyForMenu(menu) {
+  var prefix = PAGE_ID() + "."
+  if (String(menu || "").indexOf(prefix) !== 0) return ""
+  var id = String(menu).slice(prefix.length)
+  if (id === "favorites") return "favoritesShown"
+  if (id === "launches") return "recents"
+  return id
+}
+
 // While typing on "omarunner-settings.<key>", the typed value as a pickable row, in the
 // display-row shape buildRows produces.
 function customDisplayRow(activeMenu, text) {
   var menu = String(activeMenu || "")
-  var prefix = PAGE_ID() + "."
-  if (menu.indexOf(prefix) !== 0) return null
-  var key = menu.slice(prefix.length)
+  var key = keyForMenu(menu)
+  if (!key) return null
   var choice = customChoice(key, text)
   // A preset with that value is already listed; don't offer it twice.
   if (!choice || isPreset(key, choice.value)) return null
@@ -202,13 +212,15 @@ function pageRows(settingsIn, setupCommand, favorites) {
 
   // A choice submenu (its label shows the current value) with its presets and
   // Custom… row, under `parentId`.
-  function choiceGroup(item, parentId) {
+  // `inline` lists the presets straight in `parentId` (Favorites, Recent
+  // launches) instead of behind a submenu row.
+  function choiceGroup(item, parentId, inline) {
     var key = item.key
-    var menuId = PAGE_ID() + "." + key
-    var group = [menuRow(menuId, parentId, item.label + " · " + currentLabel(key, settings[key]), 0)]
+    var menuId = inline ? parentId : PAGE_ID() + "." + key
+    var group = inline ? [] : [menuRow(menuId, parentId, item.label + " · " + currentLabel(key, settings[key]), 0)]
     for (var c = 0; c < item.choices.length; c++) {
       var choice = item.choices[c]
-      var id = menuId + "." + c
+      var id = PAGE_ID() + "." + key + "." + c
       // Accent choices show their colour as a dot in the row's icon spot.
       group.push({ id: id, parent: menuId, kind: "setting-option", icon: key === "accent" ? "●" : "", iconFont: "", label: choice.label, title: "",
         target: "", description: "", action: "", provider: "", aliases: [], when: "", checked: "config",
@@ -216,7 +228,7 @@ function pageRows(settingsIn, setupCommand, favorites) {
       checked[id] = settings[key] === choice.value
     }
     // Custom…: a reminder of what may be typed here, ticked for a custom value.
-    var customId = menuId + ".custom"
+    var customId = PAGE_ID() + "." + key + ".custom"
     if (hasCustom(key)) group.push({ id: customId, parent: menuId, kind: "setting-custom", icon: "", iconFont: "", label: "Custom…", title: "",
       target: "", description: customHint(key), action: "", provider: "", aliases: [], when: "", checked: "config",
       value: key, order: 0 })
@@ -239,7 +251,7 @@ function pageRows(settingsIn, setupCommand, favorites) {
     checked[menuId] = settings[onKey] === true
     var toggles = TOGGLES()
     for (var t = 0; t < toggles.length; t++) if (toggles[t].key === onKey) rows.push(toggleRow(toggles[t], menuId))
-    for (var i = 0; i < list.length; i++) if (list[i].under === under) rows = rows.concat(choiceGroup(list[i], menuId))
+    for (var i = 0; i < list.length; i++) if (list[i].under === under) rows = rows.concat(choiceGroup(list[i], menuId, true))
     return { name: name, rows: rows.concat(extra || []) }
   }
 
@@ -296,5 +308,5 @@ function applyOption(config, optionValue) {
 if (typeof module !== "undefined") {
   module.exports = { defaults: defaults, resolve: resolve, withSetting: withSetting, toggled: toggled,
     currentLabel: currentLabel, pageRows: pageRows, applyOption: applyOption, customChoice: customChoice,
-    customDisplayRow: customDisplayRow, customHint: customHint }
+    customDisplayRow: customDisplayRow, keyForMenu: keyForMenu, customHint: customHint }
 }

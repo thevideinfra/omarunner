@@ -1541,7 +1541,7 @@ Item {
             anchors.rightMargin: Style.space(8)
             anchors.verticalCenter: parent.verticalCenter
             text: root.filterText || (root.editingCustom
-              ? SettingsModel.customHint(root.activeMenu.slice("omarunner-settings.".length)) + "…"
+              ? SettingsModel.customHint(SettingsModel.keyForMenu(root.activeMenu)) + "…"
               : (root.activeMenu === "root")
                 ? "Search…"
                 : ((root.item(root.activeMenu) ? (root.item(root.activeMenu).title || root.item(root.activeMenu).label) : "Go") + "…"))

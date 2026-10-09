@@ -394,7 +394,7 @@ test("choosing Custom… switches the page into a typing mode that shows it", ()
   // The header asks for the value, with a blinking accent caret; the row shows an input box.
   assert.ok(qml.includes("id: headerText"))
   assert.ok(qml.includes("id: headerCaret"))
-  assert.ok(qml.includes("SettingsModel.customHint(root.activeMenu.slice("))
+  assert.ok(qml.includes("SettingsModel.customHint(SettingsModel.keyForMenu(root.activeMenu))"))
   assert.ok(qml.includes("id: customInput"))
   assert.ok(qml.includes('row.kind === "setting-custom" && root.editingCustom'))
 })

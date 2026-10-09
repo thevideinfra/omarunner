@@ -273,10 +273,10 @@ top, a fifth of the way down; results grow downward from there.
 entries). They are listed under a *Favorites* heading whenever omarunner opens
 with nothing typed. Settings → Favorites lists them: Enter unpins one, and
 `Ctrl+Up` / `Ctrl+Down` reorders. Open Favorites to switch
-the start-screen list **ON**/**OFF** (on by default) and set the **Amount** (3, 5, 8 or
-All).
+the start-screen list **ON**/**OFF** (on by default) and pick how many show (3, 5, 8,
+All or a typed number).
 
-**Recent launches** (a switch, off by default, with an **Amount** of 3, 5 or 8) lists what you launched
+**Recent launches** (a switch, off by default, with 3, 5, 8 or a typed number to show) lists what you launched
 last, under the favorites, instead of the bare input line. Only apps, files,
 folders and menu actions are recorded: never clipboard entries, typed commands,
 kill, calculator or web searches. Favorites and history live in
