@@ -1278,7 +1278,12 @@ Item {
         maxRowsHeight = root.activeMenu === "root" ? -1 : root.visibleRowsHeight
       }
     }
-    function releaseCardTop() { cardTop = -1; maxRowsHeight = -1 }
+    // Where the centred card sits when it is just the input line, which is how
+    // it opens. A taller card (the Settings page) would centre higher.
+    readonly property int closedCenterTop: Math.max(Style.gapsOut, Math.round((height - (root.contentMargin * 2 + root.headerHeight)) / 2))
+    // A new Location moves the card now: pin it at the new place (the opening
+    // place, for Center) and leave the rows ceiling open.
+    function releaseCardTop() { cardTop = locationY >= 0 ? locationY : closedCenterTop; maxRowsHeight = -1 }
     onVisibleChanged: if (!visible) { cardTop = -1; maxRowsHeight = -1 }
 
     Rectangle {

@@ -446,3 +446,8 @@ test("Low and Lower pin the top line below the centre and grow downward", () => 
   assert.match(qml, /case "down2": return Math\.round\(height \* 0\.66\)/)
   assert.ok(!qml.includes("bottomAnchored"))
 })
+
+test("picking Center pins the card where it opens, not centred on the tall Settings page", () => {
+  assert.match(qml, /function releaseCardTop\(\) \{ cardTop = locationY >= 0 \? locationY : closedCenterTop; maxRowsHeight = -1 \}/)
+  assert.match(qml, /closedCenterTop: Math\.max\(Style\.gapsOut, Math\.round\(\(height - \(root\.contentMargin \* 2 \+ root\.headerHeight\)\) \/ 2\)\)/)
+})
