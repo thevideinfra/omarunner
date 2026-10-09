@@ -854,10 +854,12 @@ Item {
       sourceConfig.toggle(row.value)
     } else if (row.kind === "setting-option") {
       // Pick, then return to the Settings page, whose row shows the new value.
-      sourceConfig.apply(SettingsModel.applyOption(sourceConfig.config, row.value))
+      // Read before applying: the config change rebuilds the model under `row`.
+      var optionValue = String(row.value)
+      sourceConfig.apply(SettingsModel.applyOption(sourceConfig.config, optionValue))
       // The card top is frozen once a page is open; release it so a new
       // Location takes effect now, not on the next open.
-      if (row.value.indexOf("location=") === 0) panel.releaseCardTop()
+      if (optionValue.indexOf("location=") === 0) panel.releaseCardTop()
       if (!SettingsModel.listsInline(root.activeMenu)) root.goBack()
     } else if (row.kind === "setting-custom") {
       // A reminder; with a valid value typed (which can also match the

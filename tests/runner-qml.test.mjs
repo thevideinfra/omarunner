@@ -240,7 +240,7 @@ test("layout values come from the resolved settings", () => {
 
 test("the Settings page is injected and its rows write the config", () => {
   assert.ok(qml.includes("SettingsModel.pageRows(SettingsModel.resolve(sourceConfig.config),"))
-  assert.ok(qml.includes("sourceConfig.apply(SettingsModel.applyOption(sourceConfig.config, row.value))"))
+  assert.ok(qml.includes("sourceConfig.apply(SettingsModel.applyOption(sourceConfig.config, optionValue))"))
   assert.ok(qml.includes("sourceConfig.apply(SettingsModel.toggled(sourceConfig.config, row.value))"))
 })
 
@@ -433,6 +433,6 @@ test("the root never caps search height by its start list", () => {
 })
 
 test("picking a Location applies at once; inline pages stay open", () => {
-  assert.match(qml, /location=[\s\S]{0,40}panel\.releaseCardTop\(\)/)
+  assert.match(qml, /optionValue\.indexOf\("location="\) === 0\) panel\.releaseCardTop\(\)/)
   assert.match(qml, /if \(!SettingsModel\.listsInline\(root\.activeMenu\)\) root\.goBack\(\)/)
 })
