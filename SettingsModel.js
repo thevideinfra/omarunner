@@ -7,8 +7,8 @@ function CHOICES() {
       { value: "green", label: "Green" }, { value: "magenta", label: "Magenta" }, { value: "yellow", label: "Yellow" },
       { value: "red", label: "Red" }, { value: "orange", label: "Orange" }] },
     { key: "location", label: "Location", choices: [
-      { value: "edge", label: "Very top" }, { value: "high", label: "Almost top" }, { value: "top", label: "Upper" },
-      { value: "low", label: "High center" }, { value: "center", label: "Center" }] },
+      { value: "edge", label: "Very top" }, { value: "high", label: "Almost top" }, { value: "top", label: "Higher" },
+      { value: "low", label: "High" }, { value: "center", label: "Center" }] },
     { key: "favoritesShown", label: "Amount", under: "favorites", choices: [
       { value: 3, label: "3" }, { value: 5, label: "5" }, { value: 8, label: "8" }, { value: 30, label: "All" }] },
     { key: "recents", label: "Amount", under: "launches", choices: [
@@ -153,6 +153,9 @@ function customChoice(key, text) {
 
 // The setting a settings menu edits: its own key, or for the Favorites and
 // Recent launches pages (which list their amounts inline) the amount's key.
+// Pages that list their presets inline: picking one stays on the page.
+function listsInline(menu) { return menu === PAGE_ID() + ".favorites" || menu === PAGE_ID() + ".launches" }
+
 function keyForMenu(menu) {
   var prefix = PAGE_ID() + "."
   if (String(menu || "").indexOf(prefix) !== 0) return ""
@@ -309,5 +312,5 @@ function applyOption(config, optionValue) {
 if (typeof module !== "undefined") {
   module.exports = { defaults: defaults, resolve: resolve, withSetting: withSetting, toggled: toggled,
     currentLabel: currentLabel, pageRows: pageRows, applyOption: applyOption, customChoice: customChoice,
-    customDisplayRow: customDisplayRow, keyForMenu: keyForMenu, customHint: customHint }
+    customDisplayRow: customDisplayRow, keyForMenu: keyForMenu, listsInline: listsInline, customHint: customHint }
 }

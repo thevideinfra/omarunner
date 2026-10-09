@@ -855,7 +855,10 @@ Item {
     } else if (row.kind === "setting-option") {
       // Pick, then return to the Settings page, whose row shows the new value.
       sourceConfig.apply(SettingsModel.applyOption(sourceConfig.config, row.value))
-      root.goBack()
+      // The card top is frozen once a page is open; release it so a new
+      // Location takes effect now, not on the next open.
+      if (row.value.indexOf("location=") === 0) panel.releaseCardTop()
+      if (!SettingsModel.listsInline(root.activeMenu)) root.goBack()
     } else if (row.kind === "setting-custom") {
       // A reminder; with a valid value typed (which can also match the
       // reminder's own range text), it applies that value.
@@ -1240,9 +1243,9 @@ Item {
     property int maxRowsHeight: -1
     // Settings → Location. Anything but "center" pins the card's top line
     // and lets it grow downward, so the input line stays put as results appear:
-    // "edge" (Very top) sits just under the bar, "top" (Upper) a fifth of the
-    // screen down, "high" (Almost top) halfway between those two, "low" (High
-    // center) about a third down.
+    // "edge" (Very top) sits just under the bar, "top" (Higher) a fifth of the
+    // screen down, "high" (Almost top) halfway between those two, "low" (High)
+    // about a third down.
     readonly property int edgeY: Style.bar.sizeHorizontal + Style.gapsOut * 2
     readonly property int topLocationY: Math.max(edgeY, Math.round(height * 0.18))
     readonly property int locationY: {
@@ -1267,6 +1270,7 @@ Item {
         maxRowsHeight = root.activeMenu === "root" ? -1 : root.visibleRowsHeight
       }
     }
+    function releaseCardTop() { cardTop = -1; maxRowsHeight = -1 }
     onVisibleChanged: if (!visible) { cardTop = -1; maxRowsHeight = -1 }
 
     Rectangle {

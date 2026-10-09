@@ -431,3 +431,8 @@ test("top location sits a fifth down", () => {
 test("the root never caps search height by its start list", () => {
   assert.match(qml, /maxRowsHeight = root\.activeMenu === "root" \? -1 : root\.visibleRowsHeight/)
 })
+
+test("picking a Location applies at once; inline pages stay open", () => {
+  assert.match(qml, /location=[\s\S]{0,40}panel\.releaseCardTop\(\)/)
+  assert.match(qml, /if \(!SettingsModel\.listsInline\(root\.activeMenu\)\) root\.goBack\(\)/)
+})
