@@ -436,3 +436,7 @@ test("picking a Location applies at once; inline pages stay open", () => {
   assert.match(qml, /optionValue\.indexOf\("location="\) === 0\) panel\.releaseCardTop\(\)/)
   assert.match(qml, /if \(!SettingsModel\.listsInline\(root\.activeMenu\)\) root\.goBack\(\)/)
 })
+
+test("a Location pick reopens the rows ceiling after going back", () => {
+  assert.match(qml, /goBack\(\)[\s\S]{0,260}optionValue\.indexOf\("location="\) === 0\) panel\.maxRowsHeight = -1/)
+})

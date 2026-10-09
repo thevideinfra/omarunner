@@ -861,6 +861,9 @@ Item {
       // Location takes effect now, not on the next open.
       if (optionValue.indexOf("location=") === 0) panel.releaseCardTop()
       if (!SettingsModel.listsInline(root.activeMenu)) root.goBack()
+      // goBack froze the rows ceiling at the short options list it left;
+      // reopen it so the Settings page keeps its full height.
+      if (optionValue.indexOf("location=") === 0) panel.maxRowsHeight = -1
     } else if (row.kind === "setting-custom") {
       // A reminder; with a valid value typed (which can also match the
       // reminder's own range text), it applies that value.
