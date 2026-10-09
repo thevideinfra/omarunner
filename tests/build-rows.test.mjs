@@ -465,3 +465,10 @@ test("favorite and note rows stay off the root search", () => {
   const order = itemOrder.concat(["omarunner-settings.favorites.0"])
   assert.deepEqual(RunnerModel.buildRows(items, order, {}, {}, "root", "firefox").rows, [])
 })
+
+test("a submenu row keeps its own section, so groups inside a page get a divider", () => {
+  const { items, itemOrder } = fixture()
+  items["style.font"].section = "group:pinned"
+  const r = RunnerModel.buildRows(items, itemOrder, {}, {}, "style", "", [], {}, true)
+  assert.deepEqual(r.rows.map(x => x.section), ["", "group:pinned"])
+})

@@ -273,12 +273,12 @@ function pageRows(settingsIn, setupCommand, favorites) {
   if (pinned.length === 0) {
     pins.push({ id: favId + ".none", parent: favId, kind: "note", icon: "", iconFont: "", label: "No favorites yet", title: "",
       target: "", description: "Press Ctrl+P on a result to pin it", action: "", provider: "", aliases: [], when: "", checked: "",
-      value: "", order: 0 })
+      value: "", order: 0, section: "group:pinned" })
   }
   for (var p = 0; p < pinned.length; p++) {
     pins.push({ id: favId + "." + p, parent: favId, kind: "favorite-item", icon: "", iconFont: "", label: String(pinned[p].label || ""),
       title: "", target: "", description: String(pinned[p].detail || ""), action: "", provider: "", aliases: [], when: "",
-      checked: "", value: String(pinned[p].key || ""), order: 0 })
+      checked: "", value: String(pinned[p].key || ""), order: 0, section: "group:pinned" })
   }
   entries.push(switchedEntry("Favorites", "favorites", "favoritesOn", pins))
   entries.push(switchedEntry("Recent launches", "launches", "recentsOn", []))

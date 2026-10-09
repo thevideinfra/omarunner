@@ -282,3 +282,11 @@ test("favorites switch on by default; the amount is 3, 5, 8 or All", () => {
   const options = page.rows.filter(r => r.parent === "omarunner-settings.favorites" && r.kind === "setting-option")
   assert.deepEqual(options.map(r => r.label), ["3", "5", "8", "All"])
 })
+
+test("pinned items and the no-favorites note sit in their own group, so a divider separates them", () => {
+  const fav = [{ key: "app:foot", kind: "app", label: "foot", detail: "", appId: "foot" }]
+  const rows = S.pageRows(S.defaults(), "", fav).rows.filter(r => r.parent === "omarunner-settings.favorites")
+  assert.deepEqual(rows.map(r => r.section || ""), ["", "", "", "", "", "", "group:pinned"])
+  const none = S.pageRows(S.defaults(), "", []).rows.filter(r => r.kind === "note")
+  assert.equal(none[0].section, "group:pinned")
+})

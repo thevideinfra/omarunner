@@ -648,7 +648,8 @@ function buildRows(items, itemOrder, whenResults, checkedResults, activeMenu, qu
       var child = item(items, order[j])
       if (!child || child.parent !== active) continue
       if (!isVisible(items, itemOrder, whenResults, child)) continue
-      rows.push(displayRow(items, itemOrder, checkedResults, child, child.description, child.order))
+      rows.push(displayRow(items, itemOrder, checkedResults, child, child.description, child.order,
+        typeof child.section === "string" ? child.section : ""))
     }
 
     // DesktopEntries can reorder its values when an application starts. Keep
