@@ -446,3 +446,12 @@ test("locations below the centre pin the bottom edge and grow upward", () => {
   assert.match(qml, /effectiveCardTop: bottomAnchored\s*\? Math\.max\(Style\.gapsOut, height - bottomMargin - root\.cardHeight\)/)
   assert.match(qml, /panel\.bottomAnchored \? panel\.height - panel\.bottomMargin/)
 })
+
+test("below the centre the card flips: input at the bottom, results above, nearest first", () => {
+  assert.match(qml, /readonly property bool reversed: panel\.bottomAnchored/)
+  assert.match(qml, /y: root\.reversed \? parent\.height - height : 0/)
+  assert.match(qml, /y: root\.reversed \? 0 : root\.headerHeight \+ root\.contentSpacing/)
+  assert.match(qml, /verticalLayoutDirection: root\.reversed \? ListView\.BottomToTop : ListView\.TopToBottom/)
+  assert.match(qml, /root\.select\(root\.reversed \? 1 : -1\)/)
+  assert.match(qml, /root\.select\(root\.reversed \? -1 : 1\)/)
+})

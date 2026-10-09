@@ -269,8 +269,9 @@ Turn it off with **Version and GitHub link**.
 **Location** puts the launcher in the centre of the screen (default), higher up
 (High, Higher, Almost top, Very top just under the bar) or lower down (Low,
 Lower, Almost bottom, Very bottom near the screen edge). Above the centre
-results grow downward from the input line; below it the card is pinned by its
-bottom edge and grows upward.
+results grow downward from the input line. Below it the card flips: the input
+line stays low and results stack upward from it, the best match nearest the line
+(`Up` moves up the stack).
 
 **Favorites** are results you pin with `Ctrl+P` (apps, files, folders, menu
 entries). They are listed under a *Favorites* heading whenever omarunner opens

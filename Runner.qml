@@ -150,6 +150,8 @@ Item {
   // With Favorites pinned or Recent launches on, the empty root lists them
   // instead (startRowCount, set by rebuildDisplay).
   property int startRowCount: 0
+  // Locations below the centre flip the card: input at the bottom, results above.
+  readonly property bool reversed: panel.bottomAnchored
   readonly property bool collapsed: root.activeMenu === "root" && !root.filterText.trim() && root.startRowCount === 0
   property int cardWidth: Math.min(Style.space(root.settings.width), panel.width - Style.gapsOut * 2)
   property int visibleRowsHeight: root.collapsed ? 0 : rowListHeight(layoutSerial, displayModel.count, filterText, searchDivider)
@@ -613,12 +615,15 @@ Item {
     if (!item) return
 
     var reach = root.rowPeek + root.rowSpacing
-    if (root.selectedIndex < displayModel.count - 1) {
+    // Rows stack upward when reversed, so the next index lies above the cursor.
+    var nextBelow = root.reversed ? root.selectedIndex > 0 : root.selectedIndex < displayModel.count - 1
+    var nextAbove = root.reversed ? root.selectedIndex < displayModel.count - 1 : root.selectedIndex > 0
+    if (nextBelow) {
       var maxY = Math.max(resultList.originY, resultList.originY + resultList.contentHeight - resultList.height)
       var overhang = item.y + item.height + reach - (resultList.contentY + resultList.height)
       if (overhang > 0) resultList.contentY = Math.min(resultList.contentY + overhang, maxY)
     }
-    if (root.selectedIndex > 0) {
+    if (nextAbove) {
       var underhang = resultList.contentY - (item.y - reach)
       if (underhang > 0) resultList.contentY = Math.max(resultList.contentY - underhang, resultList.originY)
     }
@@ -1370,16 +1375,16 @@ Item {
             root.goBack()
             event.accepted = true
           } else if (event.key === Qt.Key_Up) {
-            root.select(-1)
+            root.select(root.reversed ? 1 : -1)
             event.accepted = true
           } else if (event.key === Qt.Key_Down) {
-            root.select(1)
+            root.select(root.reversed ? -1 : 1)
             event.accepted = true
           } else if (event.key === Qt.Key_PageUp) {
-            root.select(-6)
+            root.select(root.reversed ? 6 : -6)
             event.accepted = true
           } else if (event.key === Qt.Key_PageDown) {
-            root.select(6)
+            root.select(root.reversed ? -6 : 6)
             event.accepted = true
           } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Right) {
             if (root.cursorActive) root.activateIndex(root.selectedIndex, false, event.modifiers)
@@ -1411,17 +1416,21 @@ Item {
         }
       }
 
-      Column {
+      // Header and results. Normally the input line is on top and results
+      // hang below it; for the locations below the centre it flips: the input
+      // line sits at the bottom edge and results stack above it, nearest
+      // result first, so the line you type on stays where it is.
+      Item {
         anchors.fill: parent
         anchors.topMargin: card.contentTopInset
         anchors.rightMargin: card.contentRightInset
         anchors.bottomMargin: card.contentBottomInset
         anchors.leftMargin: card.contentLeftInset
-        spacing: root.contentSpacing
 
         Rectangle {
           width: parent.width
           height: root.headerHeight
+          y: root.reversed ? parent.height - height : 0
           radius: root.cornerRadius
           color: "transparent"
 
@@ -1598,12 +1607,14 @@ Item {
         Item {
           width: parent.width
           height: root.visibleRowsHeight
+          y: root.reversed ? 0 : root.headerHeight + root.contentSpacing
           visible: !root.collapsed
 
           ListView {
             id: resultList
             anchors.fill: parent
             model: displayModel
+            verticalLayoutDirection: root.reversed ? ListView.BottomToTop : ListView.TopToBottom
             clip: true
             spacing: root.rowSpacing
             boundsBehavior: Flickable.StopAtBounds
@@ -1658,7 +1669,8 @@ Item {
                 visible: row.gapAbove > 0
                 x: Style.space(4)
                 width: parent.width - Style.space(8)
-                y: Math.round(row.gapAbove / 2)
+                // Reversed lists stack upward: a group's divider sits below its first row.
+                y: root.reversed ? root.baseRowHeight + Math.round(row.gapAbove / 2) : Math.round(row.gapAbove / 2)
                 height: Style.spacing.hairline
                 color: Util.alpha(root.foreground, 0.2)
               }
@@ -1686,7 +1698,8 @@ Item {
                 anchors.left: parent.left
                 anchors.leftMargin: root.categoryWidth
                 anchors.right: parent.right
-                anchors.bottom: parent.bottom
+                anchors.top: root.reversed ? parent.top : undefined
+                anchors.bottom: root.reversed ? undefined : parent.bottom
                 height: root.baseRowHeight
                 radius: root.cornerRadius
                 color: row.hasCursor ? root.selectedBackground : "transparent"
@@ -1995,11 +2008,6 @@ Item {
               width: Style.space(320)
             }
           }
-        }
-
-        Item {
-          width: parent.width
-          height: 0
         }
       }
     }
