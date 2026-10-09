@@ -441,17 +441,8 @@ test("a Location pick reopens the rows ceiling after going back", () => {
   assert.match(qml, /goBack\(\)[\s\S]{0,260}optionValue\.indexOf\("location="\) === 0\) panel\.maxRowsHeight = -1/)
 })
 
-test("locations below the centre pin the bottom edge and grow upward", () => {
-  for (const place of ["down1", "down2", "down3", "bottom"]) assert.ok(qml.includes('case "' + place + '"'), place)
-  assert.match(qml, /effectiveCardTop: bottomAnchored\s*\? Math\.max\(Style\.gapsOut, height - bottomMargin - root\.cardHeight\)/)
-  assert.match(qml, /panel\.bottomAnchored \? panel\.height - panel\.bottomMargin/)
-})
-
-test("below the centre the card flips: input at the bottom, results above, nearest first", () => {
-  assert.match(qml, /readonly property bool reversed: panel\.bottomAnchored/)
-  assert.match(qml, /y: root\.reversed \? parent\.height - height : 0/)
-  assert.match(qml, /y: root\.reversed \? 0 : root\.headerHeight \+ root\.contentSpacing/)
-  assert.match(qml, /verticalLayoutDirection: root\.reversed \? ListView\.BottomToTop : ListView\.TopToBottom/)
-  assert.match(qml, /root\.select\(root\.reversed \? 1 : -1\)/)
-  assert.match(qml, /root\.select\(root\.reversed \? -1 : 1\)/)
+test("Low and Lower pin the top line below the centre and grow downward", () => {
+  assert.match(qml, /case "down1": return Math\.round\(height \* 0\.56\)/)
+  assert.match(qml, /case "down2": return Math\.round\(height \* 0\.66\)/)
+  assert.ok(!qml.includes("bottomAnchored"))
 })

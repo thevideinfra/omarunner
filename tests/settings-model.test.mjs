@@ -213,7 +213,7 @@ test("location defaults to the center and offers places above and below", () => 
   assert.equal(S.resolve({ settings: { location: "sideways" } }).location, "center")
   const page = S.pageRows(S.defaults())
   const options = page.rows.filter(r => r.parent === "omarunner-settings.location" && r.kind === "setting-option")
-  assert.deepEqual(options.map(r => r.label + "=" + r.value), ["Very top=location=edge", "Almost top=location=high", "Higher=location=top", "High=location=low", "Center=location=center", "Low=location=down1", "Lower=location=down2", "Almost bottom=location=down3", "Very bottom=location=bottom"])
+  assert.deepEqual(options.map(r => r.label + "=" + r.value), ["Very top=location=edge", "Almost top=location=high", "Higher=location=top", "High=location=low", "Center=location=center", "Low=location=down1", "Lower=location=down2"])
   assert.equal(S.applyOption({}, "location=top").settings.location, "top")
 })
 
