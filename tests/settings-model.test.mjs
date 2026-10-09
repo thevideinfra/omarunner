@@ -5,7 +5,7 @@ const S = await loadJsModule("SettingsModel.js")
 
 test("defaults match the tuned launcher", () => {
   assert.deepEqual(S.resolve({}), { width: 420, rows: 9, density: 28, fontScale: 85, hintScale: 100, fontFamily: "", border: 2,
-    opacity: 100, radius: -1, accent: "theme", location: "center", recents: 0,
+    opacity: 100, radius: -1, accent: "theme", location: "center", recents: 0, favoritesShown: 30,
     fuzzy: true, categories: true, hints: true, about: true })
 })
 
@@ -249,4 +249,14 @@ test("the Favorites entry lists the pinned items, or says how to pin one", () =>
   const top = page.rows.filter(r => r.parent === "omarunner-settings").map(r => r.label.split(" · ")[0])
   assert.deepEqual(top, [...top].sort((a, b) => a.localeCompare(b)))
   assert.deepEqual(page.rows.map(r => r.order), page.rows.map((_, i) => i))
+})
+
+test("show favorites defaults to all, with Off, 3, 5, 8 and a custom range", () => {
+  assert.equal(S.resolve({}).favoritesShown, 30)
+  assert.equal(S.currentLabel("favoritesShown", 30), "All")
+  assert.equal(S.resolve({ settings: { favoritesShown: 0 } }).favoritesShown, 0)
+  assert.equal(S.resolve({ settings: { favoritesShown: 4 } }).favoritesShown, 4)
+  const page = S.pageRows(S.defaults())
+  const options = page.rows.filter(r => r.parent === "omarunner-settings.favoritesShown" && r.kind === "setting-option")
+  assert.deepEqual(options.map(r => r.label), ["Off", "3", "5", "8", "All"])
 })

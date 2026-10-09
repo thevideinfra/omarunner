@@ -103,3 +103,12 @@ test("rows rebuilt from entries carry every display role and can be activated ag
   assert.equal(row.sourceId, "files")
   assert.equal(row.value, "/home/ks/a.txt")
 })
+
+test("favoritesShown caps or hides the favorites; pinned items stay out of history", () => {
+  const favs = ["a", "b", "c"].map(n => H.entryFromRow({ ...file, value: "/" + n, label: n }))
+  assert.deepEqual(H.startGroups(favs, [], 0, 2)[0].rows.map(r => r.label), ["a", "b"])
+  assert.deepEqual(H.startGroups(favs, [], 0)[0].rows.map(r => r.label), ["a", "b", "c"])
+  assert.deepEqual(H.startGroups(favs, [], 0, 0), [])
+  const hist = H.record([], favs[0], 1, 50)
+  assert.deepEqual(H.startGroups(favs, hist, 5, 0), [])
+})

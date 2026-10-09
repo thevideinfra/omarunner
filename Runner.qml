@@ -545,7 +545,7 @@ Item {
   // Favorites and recent launches for an empty root; the Recent launches
   // setting picks how many (0 = off).
   function startGroups() {
-    return HistoryModel.startGroups(historyStore.favorites, historyStore.history, root.settings.recents)
+    return HistoryModel.startGroups(historyStore.favorites, historyStore.history, root.settings.recents, root.settings.favoritesShown)
   }
 
   // Ctrl+P: pin or unpin the highlighted result.

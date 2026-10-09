@@ -8,6 +8,8 @@ function CHOICES() {
       { value: "red", label: "Red" }, { value: "orange", label: "Orange" }] },
     { key: "location", label: "Location", choices: [
       { value: "center", label: "Center" }, { value: "top", label: "Top" }] },
+    { key: "favoritesShown", label: "Show favorites", choices: [
+      { value: 0, label: "Off" }, { value: 3, label: "3" }, { value: 5, label: "5" }, { value: 8, label: "8" }, { value: 30, label: "All" }] },
     { key: "recents", label: "Recent launches", choices: [
       { value: 0, label: "Off" }, { value: 3, label: "3" }, { value: 5, label: "5" }, { value: 8, label: "8" }] },
     { key: "width", label: "Width", choices: [
@@ -40,7 +42,7 @@ function PAGE_ID() { return "omarunner-settings" }
 
 function RANGES() {
   return { width: [300, 1600], rows: [3, 20], density: [18, 48], fontScale: [50, 200], hintScale: [50, 200], border: [0, 10],
-    opacity: [30, 100], radius: [0, 30], recents: [0, 20] }
+    opacity: [30, 100], radius: [0, 30], recents: [0, 20], favoritesShown: [0, 30] }
 }
 
 function inRange(key, value) {
@@ -58,7 +60,7 @@ function TOGGLES() {
 }
 
 function defaults() {
-  return { width: 420, rows: 9, density: 28, fontScale: 85, hintScale: 100, fontFamily: "", border: 2, opacity: 100, radius: -1, accent: "theme", location: "center", recents: 0, fuzzy: true, categories: true, hints: true, about: true }
+  return { width: 420, rows: 9, density: 28, fontScale: 85, hintScale: 100, fontFamily: "", border: 2, opacity: 100, radius: -1, accent: "theme", location: "center", recents: 0, favoritesShown: 30, fuzzy: true, categories: true, hints: true, about: true }
 }
 
 function choiceFor(key) {

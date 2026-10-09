@@ -129,13 +129,15 @@ function rowFromEntry(entry, section) {
 
 // The groups shown on an empty root: Favorites first (all of them), then the
 // most recent launches that are not already favorites (`recents` of them; 0
-// turns the history off).
-function startGroups(favorites, history, recents) {
+// turns the history off). `favoritesShown` caps the favorites listed (0 hides
+// them; omitted shows all). Pinned items stay out of the history either way.
+function startGroups(favorites, history, recents, favoritesShown) {
   var groups = []
   var favs = clean(favorites, 30)
-  if (favs.length > 0) {
+  var shown = typeof favoritesShown === "number" ? favoritesShown : 30
+  if (shown > 0 && favs.length > 0) {
     groups.push({ section: "start:favorites", label: "Favorites",
-      rows: favs.map(function(e) { return rowFromEntry(e, "start:favorites") }) })
+      rows: favs.slice(0, shown).map(function(e) { return rowFromEntry(e, "start:favorites") }) })
   }
   var count = typeof recents === "number" ? recents : 0
   if (count > 0) {
