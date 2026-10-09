@@ -426,3 +426,7 @@ test("top location sits a fifth down", () => {
   assert.match(src, /settings\.location === "top" \? topLocationY/)
   assert.match(src, /Math\.round\(height \* 0\.18\)/)
 })
+
+test("the root never caps search height by its start list", () => {
+  assert.match(qml, /maxRowsHeight = root\.activeMenu === "root" \? -1 : root\.visibleRowsHeight/)
+})

@@ -1243,13 +1243,14 @@ Item {
     readonly property int centeredTop: root.settings.location === "top" ? topLocationY
       : Math.max(Style.gapsOut, Math.round((height - root.cardHeight) / 2))
     readonly property int effectiveCardTop: cardTop >= 0 ? cardTop : centeredTop
-    // A collapsed root has no rows to cap the card with, and freezing that
-    // zero would hold the first search to a single row. Leave the ceiling
-    // open in that case and let the screen budget alone decide.
+    // A root start screen (bare input line, or the few Favorites and recent
+    // launches) has too few rows to cap the card with, and freezing that
+    // height would hold the first search to those few rows. Leave the ceiling
+    // open for the root and let the screen budget alone decide.
     function freezeCardTop() {
       if (visible && cardTop < 0) {
         cardTop = effectiveCardTop
-        maxRowsHeight = root.collapsed ? -1 : root.visibleRowsHeight
+        maxRowsHeight = root.activeMenu === "root" ? -1 : root.visibleRowsHeight
       }
     }
     onVisibleChanged: if (!visible) { cardTop = -1; maxRowsHeight = -1 }
