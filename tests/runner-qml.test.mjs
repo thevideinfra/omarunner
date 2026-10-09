@@ -440,3 +440,9 @@ test("picking a Location applies at once; inline pages stay open", () => {
 test("a Location pick reopens the rows ceiling after going back", () => {
   assert.match(qml, /goBack\(\)[\s\S]{0,260}optionValue\.indexOf\("location="\) === 0\) panel\.maxRowsHeight = -1/)
 })
+
+test("locations below the centre pin the bottom edge and grow upward", () => {
+  for (const place of ["down1", "down2", "down3", "bottom"]) assert.ok(qml.includes('case "' + place + '"'), place)
+  assert.match(qml, /effectiveCardTop: bottomAnchored\s*\? Math\.max\(Style\.gapsOut, height - bottomMargin - root\.cardHeight\)/)
+  assert.match(qml, /panel\.bottomAnchored \? panel\.height - panel\.bottomMargin/)
+})

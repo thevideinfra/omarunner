@@ -249,7 +249,9 @@ Item {
   // derived from the card height, which this value feeds.
   function availableRowsHeight() {
     var top = panel.cardTop >= 0 ? panel.cardTop : (panel.locationY >= 0 ? panel.locationY : Style.gapsOut)
-    var available = panel.height - top - Style.gapsOut - root.contentMargin * 2 - root.headerHeight - root.contentSpacing
+    // Bottom-anchored cards grow upward: the room is what lies above the pinned bottom edge.
+    var room = panel.bottomAnchored ? panel.height - panel.bottomMargin - Style.gapsOut : panel.height - top - Style.gapsOut
+    var available = room - root.contentMargin * 2 - root.headerHeight - root.contentSpacing
     // For a submenu, the starting menu sets the ceiling along with the offset:
     // drilling deeper scrolls behind the fold instead of growing the card. On
     // the root route the first freeze leaves maxRowsHeight at -1 for the rest
@@ -1262,9 +1264,26 @@ Item {
       default: return -1
       }
     }
+    // Below the centre the card is pinned by its bottom edge instead, at the
+    // mirror of the places above, and grows upward (a card pinned by its top
+    // would have no room left for results): "down1" (Low), "down2" (Lower),
+    // "down3" (Almost bottom, halfway to the edge) and "bottom" (Very bottom).
+    readonly property int edgeBottom: Style.gapsOut * 2
+    readonly property int bottomMargin: {
+      switch (root.settings.location) {
+      case "down1": return Math.round(height * 0.32)
+      case "down2": return Math.round(height * 0.18)
+      case "down3": return Math.round((edgeBottom + height * 0.18) / 2)
+      case "bottom": return edgeBottom
+      default: return -1
+      }
+    }
+    readonly property bool bottomAnchored: bottomMargin >= 0
     readonly property int centeredTop: locationY >= 0 ? locationY
       : Math.max(Style.gapsOut, Math.round((height - root.cardHeight) / 2))
-    readonly property int effectiveCardTop: cardTop >= 0 ? cardTop : centeredTop
+    readonly property int effectiveCardTop: bottomAnchored
+      ? Math.max(Style.gapsOut, height - bottomMargin - root.cardHeight)
+      : (cardTop >= 0 ? cardTop : centeredTop)
     // A root start screen (bare input line, or the few Favorites and recent
     // launches) has too few rows to cap the card with, and freezing that
     // height would hold the first search to those few rows. Leave the ceiling

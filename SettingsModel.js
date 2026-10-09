@@ -8,7 +8,9 @@ function CHOICES() {
       { value: "red", label: "Red" }, { value: "orange", label: "Orange" }] },
     { key: "location", label: "Location", choices: [
       { value: "edge", label: "Very top" }, { value: "high", label: "Almost top" }, { value: "top", label: "Higher" },
-      { value: "low", label: "High" }, { value: "center", label: "Center" }] },
+      { value: "low", label: "High" }, { value: "center", label: "Center" },
+      { value: "down1", label: "Low" }, { value: "down2", label: "Lower" }, { value: "down3", label: "Almost bottom" },
+      { value: "bottom", label: "Very bottom" }] },
     { key: "favoritesShown", label: "Amount", under: "favorites", choices: [
       { value: 3, label: "3" }, { value: 5, label: "5" }, { value: 8, label: "8" }, { value: 30, label: "All" }] },
     { key: "recents", label: "Amount", under: "launches", choices: [
