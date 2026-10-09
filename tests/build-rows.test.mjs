@@ -426,3 +426,42 @@ test("config rows carry no check mark in their label; other checked rows keep it
   const rows = RunnerModel.buildRows(merged.items, merged.itemOrder, {}, { theme: true }, "root", "dark").rows
   assert.equal(rows[0].label, "Dark ✓")
 })
+
+// -- Start list: Favorites and recent launches on an empty root.
+
+const startRow = (label, section) => ({ itemId: "apps." + label, kind: "app", icon: "", iconFont: "", appIcon: label, appId: label,
+  label, target: "", detail: "", path: "", childCount: 0, action: "", provider: "", score: 0, section, sourceId: "", value: "" })
+
+test("an empty root lists the start groups, labelled, in order", () => {
+  const { items, itemOrder } = fixture()
+  const groups = [
+    { section: "start:favorites", label: "Favorites", rows: [startRow("firefox", "start:favorites")] },
+    { section: "start:history", label: "Recent launches", rows: [startRow("foot", "start:history"), startRow("zed", "start:history")] }
+  ]
+  const r = RunnerModel.buildRows(items, itemOrder, {}, {}, "root", "", [], {}, true, groups)
+  assert.deepEqual(r.rows.map(x => x.label), ["firefox", "foot", "zed"])
+  assert.deepEqual(r.sectionLabels, { "start:favorites": "Favorites", "start:history": "Recent launches" })
+})
+
+test("an empty root without start groups stays empty; a query ignores them", () => {
+  const { items, itemOrder } = fixture()
+  assert.deepEqual(RunnerModel.buildRows(items, itemOrder, {}, {}, "root", "", [], {}, true, []).rows, [])
+  assert.deepEqual(RunnerModel.buildRows(items, itemOrder, {}, {}, "root", "   ", [], {}, true, undefined).rows, [])
+  const groups = [{ section: "start:favorites", label: "Favorites", rows: [startRow("firefox", "start:favorites")] }]
+  const typed = RunnerModel.buildRows(items, itemOrder, {}, {}, "root", "theme", [], {}, true, groups)
+  assert.equal(typed.rows.some(x => x.section === "start:favorites"), false)
+})
+
+test("start groups never appear inside a submenu", () => {
+  const { items, itemOrder } = fixture()
+  const groups = [{ section: "start:favorites", label: "Favorites", rows: [startRow("firefox", "start:favorites")] }]
+  assert.deepEqual(RunnerModel.buildRows(items, itemOrder, {}, {}, "style", "", [], {}, true, groups).rows.map(x => x.label), ["Theme", "Font"])
+})
+
+test("favorite and note rows stay off the root search", () => {
+  const { items, itemOrder } = fixture()
+  items["omarunner-settings.favorites.0"] = { id: "omarunner-settings.favorites.0", parent: "omarunner-settings.favorites",
+    kind: "favorite-item", label: "Firefox", aliases: [], order: 99 }
+  const order = itemOrder.concat(["omarunner-settings.favorites.0"])
+  assert.deepEqual(RunnerModel.buildRows(items, order, {}, {}, "root", "firefox").rows, [])
+})

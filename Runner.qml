@@ -7,6 +7,7 @@ import qs.Ui
 import "RunnerModel.js" as RunnerModel
 import "SourceModel.js" as SourceModel
 import "SettingsModel.js" as SettingsModel
+import "HistoryModel.js" as HistoryModel
 
 Item {
   id: root
@@ -146,7 +147,10 @@ Item {
   property var sectionLabels: ({})
   // At the root with no query omarunner is a bare input line: no row area, and
   // no spacing under the header to hint at one.
-  readonly property bool collapsed: root.activeMenu === "root" && !root.filterText.trim()
+  // With Favorites pinned or Recent launches on, the empty root lists them
+  // instead (startRowCount, set by rebuildDisplay).
+  property int startRowCount: 0
+  readonly property bool collapsed: root.activeMenu === "root" && !root.filterText.trim() && root.startRowCount === 0
   property int cardWidth: Math.min(Style.space(root.settings.width), panel.width - Style.gapsOut * 2)
   property int visibleRowsHeight: root.collapsed ? 0 : rowListHeight(layoutSerial, displayModel.count, filterText, searchDivider)
   property int cardHeight: Math.min(contentMargin * 2 + headerHeight + (root.collapsed ? 0 : contentSpacing + visibleRowsHeight), panel.height - Style.gapsOut * 2)
@@ -235,7 +239,7 @@ Item {
   // Height of the divider drawn above the first row of a section.
   function sectionGapHeight(section) {
     if (section === "drilldown") return root.dividerHeight
-    if (section.indexOf("group:") === 0 || section.indexOf("source:") === 0) return root.groupGapHeight
+    if (section.indexOf("group:") === 0 || section.indexOf("source:") === 0 || section.indexOf("start:") === 0) return root.groupGapHeight
     return 0
   }
 
@@ -244,7 +248,7 @@ Item {
   // Uses panel.cardTop rather than effectiveCardTop: the centered top is
   // derived from the card height, which this value feeds.
   function availableRowsHeight() {
-    var top = panel.cardTop >= 0 ? panel.cardTop : Style.gapsOut
+    var top = panel.cardTop >= 0 ? panel.cardTop : (root.settings.location === "top" ? panel.topLocationY : Style.gapsOut)
     var available = panel.height - top - Style.gapsOut - root.contentMargin * 2 - root.headerHeight - root.contentSpacing
     // For a submenu, the starting menu sets the ceiling along with the offset:
     // drilling deeper scrolls behind the fold instead of growing the card. On
@@ -538,6 +542,32 @@ Item {
     return RunnerModel.descriptionTextMatches(query, text)
   }
 
+  // Favorites and recent launches for an empty root; the Recent launches
+  // setting picks how many (0 = off).
+  function startGroups() {
+    return HistoryModel.startGroups(historyStore.favorites, historyStore.history, root.settings.recents)
+  }
+
+  // Ctrl+P: pin or unpin the highlighted result.
+  function togglePinSelected() {
+    if (!root.cursorActive || root.selectedIndex < 0 || root.selectedIndex >= displayModel.count) return
+    if (historyStore.togglePin(displayModel.get(root.selectedIndex))) {
+      root.refreshSourcePage()
+      root.rebuildDisplay()
+    }
+  }
+
+  // Ctrl+Up / Ctrl+Down on the Settings → Favorites page.
+  function moveSelectedFavorite(delta) {
+    if (!root.cursorActive || root.selectedIndex < 0 || root.selectedIndex >= displayModel.count) return
+    var row = displayModel.get(root.selectedIndex)
+    if (row.kind !== "favorite-item") return
+    historyStore.move(row.value, delta)
+    root.refreshSourcePage()
+    root.selectedIndex = Math.max(0, Math.min(displayModel.count - 1, root.selectedIndex + delta))
+    root.revealCursor()
+  }
+
   function rebuildDisplay() {
     displayModel.clear()
 
@@ -545,8 +575,10 @@ Item {
 
     var built = RunnerModel.buildRows(root.items, root.itemOrder, root.whenResults,
                                       root.checkedResults, root.activeMenu, root.filterText,
-                                      root.sourceGroups(), root.hiddenGroups(), root.settings.fuzzy)
+                                      root.sourceGroups(), root.hiddenGroups(), root.settings.fuzzy,
+                                      root.startGroups())
     root.activeMenu = built.activeMenu
+    root.startRowCount = (built.activeMenu === "root" && !root.filterText.trim()) ? built.rows.length : 0
     root.searchDivider = built.searchDivider
     root.sectionLabels = built.sectionLabels || ({})
 
@@ -722,7 +754,7 @@ Item {
     // "Keybindings…" opens the setup wizard in a floating terminal.
     var setup = Quickshell.env("HOME") + "/.config/omarchy/plugins/videinfra.omarunner/bin/omarunner-setup"
     var page = SettingsModel.pageRows(SettingsModel.resolve(sourceConfig.config),
-      "omarchy-launch-floating-terminal-with-presentation " + Util.shellQuote(setup))
+      "omarchy-launch-floating-terminal-with-presentation " + Util.shellQuote(setup), historyStore.favorites)
     for (var p = 0; p < page.rows.length; p++) {
       page.rows[p].order = order.length
       items[page.rows[p].id] = page.rows[p]
@@ -807,9 +839,16 @@ Item {
     } else if (row.kind === "app") {
       var appId = row.appId
       var label = row.label
+      historyStore.record(row)
       opened = false
       filterText = ""
       appSource.launch(appId, label)
+    } else if (row.kind === "favorite-item") {
+      // Enter on a pinned item in Settings → Favorites unpins it.
+      historyStore.remove(row.value)
+      root.refreshSourcePage()
+    } else if (row.kind === "note") {
+      // Informational row.
     } else if (row.kind === "source-toggle") {
       sourceConfig.toggle(row.value)
     } else if (row.kind === "setting-option") {
@@ -831,10 +870,12 @@ Item {
     } else if (row.kind === "source") {
       var source = null
       for (var i = 0; i < root.sources.length; i++) if (root.sources[i].sourceId === row.sourceId) source = root.sources[i]
+      historyStore.record(row)
       opened = false
       filterText = ""
       if (source) source.activate(row.value, modifiers || 0)
     } else {
+      historyStore.record(row)
       root.applySelected(row.itemId, row.action)
     }
   }
@@ -900,6 +941,12 @@ Item {
   AppSource {
     id: appSource
     omarchyPath: root.omarchyPath
+  }
+
+  HistoryStore {
+    id: historyStore
+    onFavoritesChanged: if (root.rowsLoaded) root.refreshSourcePage()
+    onHistoryChanged: if (root.opened && root.activeMenu === "root" && !root.filterText.trim()) root.rebuildDisplay()
   }
 
   SourceConfig {
@@ -1190,7 +1237,11 @@ Item {
     // both.
     property int cardTop: -1
     property int maxRowsHeight: -1
-    readonly property int centeredTop: Math.max(Style.gapsOut, Math.round((height - root.cardHeight) / 2))
+    // Settings → Location "top": the card sits a fifth of the way down and
+    // grows downward, so the input line stays put as results appear.
+    readonly property int topLocationY: Math.max(Style.gapsOut, Math.round(height * 0.18))
+    readonly property int centeredTop: root.settings.location === "top" ? topLocationY
+      : Math.max(Style.gapsOut, Math.round((height - root.cardHeight) / 2))
     readonly property int effectiveCardTop: cardTop >= 0 ? cardTop : centeredTop
     // A collapsed root has no rows to cap the card with, and freezing that
     // zero would hold the first search to a single row. Leave the ceiling
@@ -1247,6 +1298,13 @@ Item {
               root.cursorActive = true
               root.activateIndex(quick, false, event.modifiers)
             }
+            event.accepted = true
+          } else if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_P) {
+            root.togglePinSelected()
+            event.accepted = true
+          } else if ((event.modifiers & Qt.ControlModifier) && (event.key === Qt.Key_Up || event.key === Qt.Key_Down)
+                     && root.activeMenu === "omarunner-settings.favorites") {
+            root.moveSelectedFavorite(event.key === Qt.Key_Up ? -1 : 1)
             event.accepted = true
           } else if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_S) {
             root.toggleSettingsPage()
@@ -1525,11 +1583,16 @@ Item {
               required property string path
               required property string action
               required property string section
+              required property string sourceId
               required property int childCount
 
               readonly property bool isAccentChoice: row.kind === "setting-option" && row.value.indexOf("accent=") === 0
               readonly property bool hasCursor: root.cursorActive && row.index === root.selectedIndex
               readonly property bool isApp: row.kind === "app"
+              // Pinned results carry a star in a search; the start list has its own heading.
+              readonly property bool pinned: root.activeMenu === "root" && row.section.indexOf("start:") !== 0
+                && HistoryModel.isFavorite(historyStore.favorites, HistoryModel.keyFor(
+                  { kind: row.kind, appId: row.appId, sourceId: row.sourceId, value: row.value, target: row.target, itemId: row.itemId }))
               // App and source rows draw an image; source rows without an
               // image path fall back to their themed icon name.
               readonly property bool usesImage: row.isApp || row.kind === "source"
@@ -1702,7 +1765,7 @@ Item {
                     text: row.detail
                     // Search results show their detail; the Sources page always
                     // shows each source's hint.
-                    visible: !customInput.visible && (root.filterText || row.kind === "source-toggle" || row.kind === "setting-custom") && row.detail.length > 0 && width > Style.space(24)
+                    visible: !customInput.visible && (root.filterText || row.section.indexOf("start:") === 0 || row.kind === "source-toggle" || row.kind === "setting-custom" || row.kind === "favorite-item") && row.detail.length > 0 && width > Style.space(24)
                     color: row.textColor
                     opacity: 0.52
                     font.family: root.textFamily
@@ -1720,6 +1783,16 @@ Item {
                   anchors.rightMargin: root.rowReservedBorderRight + Style.space(6)
                   anchors.verticalCenter: parent.verticalCenter
                   spacing: Style.space(8)
+
+                  Text {
+                    textFormat: Text.PlainText
+                    text: "★"
+                    visible: row.pinned
+                    color: root.accent
+                    font.family: root.textFamily
+                    font.pixelSize: root.fontHint
+                    anchors.verticalCenter: parent.verticalCenter
+                  }
 
                   Text {
                     textFormat: Text.PlainText

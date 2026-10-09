@@ -6,6 +6,10 @@ function CHOICES() {
       { value: "theme", label: "Theme" }, { value: "blue", label: "Blue" }, { value: "cyan", label: "Cyan" },
       { value: "green", label: "Green" }, { value: "magenta", label: "Magenta" }, { value: "yellow", label: "Yellow" },
       { value: "red", label: "Red" }, { value: "orange", label: "Orange" }] },
+    { key: "location", label: "Location", choices: [
+      { value: "center", label: "Center" }, { value: "top", label: "Top" }] },
+    { key: "recents", label: "Recent launches", choices: [
+      { value: 0, label: "Off" }, { value: 3, label: "3" }, { value: 5, label: "5" }, { value: 8, label: "8" }] },
     { key: "width", label: "Width", choices: [
       { value: 300, label: "Narrow" }, { value: 420, label: "Normal" },
       { value: 510, label: "Wide" }, { value: 680, label: "Extra wide" }] },
@@ -36,7 +40,7 @@ function PAGE_ID() { return "omarunner-settings" }
 
 function RANGES() {
   return { width: [300, 1600], rows: [3, 20], density: [18, 48], fontScale: [50, 200], hintScale: [50, 200], border: [0, 10],
-    opacity: [30, 100], radius: [0, 30] }
+    opacity: [30, 100], radius: [0, 30], recents: [0, 20] }
 }
 
 function inRange(key, value) {
@@ -54,7 +58,7 @@ function TOGGLES() {
 }
 
 function defaults() {
-  return { width: 420, rows: 9, density: 28, fontScale: 85, hintScale: 100, fontFamily: "", border: 2, opacity: 100, radius: -1, accent: "theme", fuzzy: true, categories: true, hints: true, about: true }
+  return { width: 420, rows: 9, density: 28, fontScale: 85, hintScale: 100, fontFamily: "", border: 2, opacity: 100, radius: -1, accent: "theme", location: "center", recents: 0, fuzzy: true, categories: true, hints: true, about: true }
 }
 
 function choiceFor(key) {
@@ -146,6 +150,9 @@ function customDisplayRow(activeMenu, text) {
     score: 0, section: "", sourceId: "", value: key + "=" + choice.value }
 }
 
+// Choices that allow a typed value: numbers in a range, a font name, a colour.
+function hasCustom(key) { return key === "fontFamily" || key === "accent" || !!RANGES()[key] }
+
 function customHint(key) {
   if (key === "fontFamily") return "Type a font name"
   if (key === "accent") return "Type a hex colour, like #ff8800"
@@ -172,7 +179,7 @@ function menuRow(id, parent, label, order) {
 // setupCommand: shell command that opens the keybinding wizard; when given,
 // a "Keybindings…" row runs it. (The version and GitHub link is a header item
 // in Runner.qml, switched by the "about" setting.)
-function pageRows(settingsIn, setupCommand) {
+function pageRows(settingsIn, setupCommand, favorites) {
   var settings = settingsIn || defaults()
   var entries = []
   var checked = ({})
@@ -192,10 +199,10 @@ function pageRows(settingsIn, setupCommand) {
     }
     // Custom…: a reminder of what may be typed here, ticked for a custom value.
     var customId = menuId + ".custom"
-    group.push({ id: customId, parent: menuId, kind: "setting-custom", icon: "", iconFont: "", label: "Custom…", title: "",
+    if (hasCustom(key)) group.push({ id: customId, parent: menuId, kind: "setting-custom", icon: "", iconFont: "", label: "Custom…", title: "",
       target: "", description: customHint(key), action: "", provider: "", aliases: [], when: "", checked: "config",
       value: key, order: 0 })
-    checked[customId] = !isPreset(key, settings[key])
+    if (hasCustom(key)) checked[customId] = !isPreset(key, settings[key])
     entries.push({ name: list[i].label, rows: group })
   }
   var toggles = TOGGLES()
@@ -206,6 +213,21 @@ function pageRows(settingsIn, setupCommand) {
       aliases: [], when: "", checked: "config", value: toggles[t].key, order: 0 }] })
     checked[toggleId] = settings[toggles[t].key] === true
   }
+  // Favorites: the pinned items, removable here; or a note on how to pin one.
+  var pinned = Array.isArray(favorites) ? favorites : []
+  var favId = PAGE_ID() + ".favorites"
+  var favGroup = [menuRow(favId, PAGE_ID(), "Favorites · " + (pinned.length ? pinned.length : "none"), 0)]
+  if (pinned.length === 0) {
+    favGroup.push({ id: favId + ".none", parent: favId, kind: "note", icon: "", iconFont: "", label: "No favorites yet", title: "",
+      target: "", description: "Press Ctrl+P on a result to pin it", action: "", provider: "", aliases: [], when: "", checked: "",
+      value: "", order: 0 })
+  }
+  for (var p = 0; p < pinned.length; p++) {
+    favGroup.push({ id: favId + "." + p, parent: favId, kind: "favorite-item", icon: "", iconFont: "", label: String(pinned[p].label || ""),
+      title: "", target: "", description: String(pinned[p].detail || ""), action: "", provider: "", aliases: [], when: "",
+      checked: "", value: String(pinned[p].key || ""), order: 0 })
+  }
+  entries.push({ name: "Favorites", rows: favGroup })
   if (setupCommand) {
     entries.push({ name: "Keybindings", rows: [{ id: PAGE_ID() + ".keys", parent: PAGE_ID(), kind: "action", icon: "",
       iconFont: "", label: "Keybindings…", title: "", target: "", description: "Choose the keys that open omarunner",

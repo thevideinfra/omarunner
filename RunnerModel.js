@@ -329,7 +329,7 @@ function fuzzyGaps(needle, text) {
 
 function isConfigRow(entry) {
   return !!entry && (entry.kind === "source-toggle" || entry.kind === "setting-option" || entry.kind === "setting-toggle" ||
-    entry.kind === "setting-custom")
+    entry.kind === "setting-custom" || entry.kind === "favorite-item" || entry.kind === "note")
 }
 
 // The query with spaces removed, when long enough to match fuzzily.
@@ -622,7 +622,9 @@ function withSessionAliases(items) {
 // hiddenGroups: { apps: true, menu: true, session: true } switches a menu-tree group off in
 // the root search (Sources page); submenus are never filtered.
 // fuzzy: letters-in-order matching for queries of 3+ characters.
-function buildRows(items, itemOrder, whenResults, checkedResults, activeMenu, query, sourceGroups, hiddenGroups, fuzzy) {
+// startGroups: [{ section, label, rows }] shown on an empty root (Favorites,
+// recent launches); ignored once something is typed or inside a submenu.
+function buildRows(items, itemOrder, whenResults, checkedResults, activeMenu, query, sourceGroups, hiddenGroups, fuzzy, startGroups) {
   var active = item(items, activeMenu) ? activeMenu : "root"
   var trimmed = String(query || "").trim()
   var order = Array.isArray(itemOrder) ? itemOrder : []
@@ -630,7 +632,17 @@ function buildRows(items, itemOrder, whenResults, checkedResults, activeMenu, qu
   var divider = false
 
   if (!trimmed) {
-    if (active === "root") return { activeMenu: active, rows: [], searchDivider: false, sectionLabels: {} }
+    if (active === "root") {
+      var startRows = []
+      var startLabels = ({})
+      var starts = Array.isArray(startGroups) ? startGroups : []
+      for (var sg = 0; sg < starts.length; sg++) {
+        if (!starts[sg] || !Array.isArray(starts[sg].rows) || starts[sg].rows.length === 0) continue
+        for (var sr = 0; sr < starts[sg].rows.length; sr++) startRows.push(starts[sg].rows[sr])
+        startLabels[starts[sg].section] = starts[sg].label
+      }
+      return { activeMenu: active, rows: startRows, searchDivider: false, sectionLabels: startLabels }
+    }
 
     for (var j = 0; j < order.length; j++) {
       var child = item(items, order[j])

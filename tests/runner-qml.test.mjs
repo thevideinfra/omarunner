@@ -175,7 +175,7 @@ test("text is scaled locally, never through the shell's font tokens", () => {
 test("the Sources page lists Applications and Omarchy ahead of the sources", () => {
   assert.ok(qml.includes('{ sourceId: "apps", groupLabel: "Applications", hint: "Installed apps" }'))
   assert.ok(qml.includes('{ sourceId: "menu", groupLabel: "Omarchy", hint: "Omarchy menu entries" }'))
-  assert.match(qml, /root\.sourceGroups\(\), root\.hiddenGroups\(\), root\.settings\.fuzzy\)/)
+  assert.match(qml, /root\.sourceGroups\(\), root\.hiddenGroups\(\), root\.settings\.fuzzy,\s*root\.startGroups\(\)\)/)
 })
 
 // -- More sources.
@@ -261,12 +261,12 @@ test("every source has a hint for the Sources page, shown without a query", asyn
   for (const file of SOURCE_FILES) {
     assert.match(await readFile(join(root, file), "utf8"), /property string hint: "[^"]+"/, file)
   }
-  assert.ok(qml.includes('(root.filterText || row.kind === "source-toggle" || row.kind === "setting-custom") && row.detail.length > 0'))
+  assert.ok(qml.includes('(root.filterText || row.section.indexOf("start:") === 0 || row.kind === "source-toggle" || row.kind === "setting-custom" || row.kind === "favorite-item") && row.detail.length > 0'))
 })
 
 test("category captions, details and Ctrl+N hints use the Hint size setting", () => {
   assert.ok(qml.includes("root.fontBody * root.settings.hintScale / 100"))
-  assert.equal((qml.match(/font\.pixelSize: root\.fontHint/g) || []).length, 3)
+  assert.equal((qml.match(/font\.pixelSize: root\.fontHint/g) || []).length, 4)
 })
 
 test("a second press of either page button closes its page", () => {
@@ -404,4 +404,25 @@ test("the Sources and Settings pages show chevrons where the list scrolls", () =
   assert.ok(qml.includes("id: scrollUpChevron"))
   assert.ok(qml.includes("id: scrollDownChevron"))
   assert.equal((qml.match(/visible: root\.pageScrollHints/g) || []).length, 2)
+})
+
+test("start list: collapsed yields to start rows, history store wired", () => {
+  const src = qml
+  assert.match(src, /collapsed: root\.activeMenu === "root" && !root\.filterText\.trim\(\) && root\.startRowCount === 0/)
+  assert.match(src, /root\.startGroups\(\)/)
+  assert.match(src, /HistoryStore \{\s*id: historyStore/)
+  assert.match(src, /historyStore\.record\(row\)/)
+})
+
+test("Ctrl+P pins and Ctrl+Up/Down reorders favorites", () => {
+  const src = qml
+  assert.match(src, /Qt\.Key_P\) \{\s*root\.togglePinSelected\(\)/)
+  assert.match(src, /moveSelectedFavorite\(event\.key === Qt\.Key_Up \? -1 : 1\)/)
+  assert.match(src, /row\.kind === "favorite-item"/)
+})
+
+test("top location sits a fifth down", () => {
+  const src = qml
+  assert.match(src, /settings\.location === "top" \? topLocationY/)
+  assert.match(src, /Math\.round\(height \* 0\.18\)/)
 })

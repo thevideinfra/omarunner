@@ -238,6 +238,8 @@ ranked by `fzf`.
 | `Up` / `Down`, `PageUp` / `PageDown` | move the selection |
 | `Escape` | clear the query, then close; on the Sources or Settings page, go back |
 | `Backspace` / `Left` on an empty query | back out of a submenu |
+| `Ctrl+P` | pin or unpin the selected result (Favorites) |
+| `Ctrl+Up` / `Ctrl+Down` on Settings → Favorites | move the pinned item up or down |
 | `Ctrl+,` or the filter button (top left) | Sources page, press again to close |
 | `Ctrl+S` or the gear (top right) | Settings page, press again to close |
 
@@ -250,9 +252,9 @@ The **Omarunner Sources** page (filter button, `Ctrl+,`) lists every search sour
 Omarchy and Session can be switched off the same way.
 
 The **Omarunner Settings** page (gear, `Ctrl+S`) holds: accent colour, border,
-category column, corner radius, Ctrl+number hints, font, fuzzy matching, hint
-size, opacity, row height, rows before scrolling, text size, the version and
-GitHub link, and width. On/off settings show an **ON**/**OFF** badge after their
+category column, corner radius, Ctrl+number hints, Favorites, font, fuzzy
+matching, hint size, location, opacity, recent launches, row height, rows before
+scrolling, text size, the version and GitHub link, and width. On/off settings show an **ON**/**OFF** badge after their
 name; a choice (open it to see the presets, the current one has a dot) offers
 presets and a **Custom…** entry: open the setting and type a value (a number in
 the range the row names, a font name, or a `#rrggbb` colour for the accent),
@@ -263,6 +265,20 @@ theme's palette, or type a hex colour. It colours the selected row, the
 ON/OFF badges and the choice dots. While Settings is open, the header shows the
 version and a GitHub icon beside the gear; the icon opens the project on GitHub.
 Turn it off with **Version and GitHub link**.
+
+**Location** puts the launcher in the centre of the screen (default) or at the
+top, a fifth of the way down; results grow downward from there.
+
+**Favorites** are results you pin with `Ctrl+P` (apps, files, folders, menu
+entries). They are listed under a *Favorites* heading whenever omarunner opens
+with nothing typed. Settings → Favorites lists them: Enter unpins one, and
+`Ctrl+Up` / `Ctrl+Down` reorders.
+
+**Recent launches** (off by default; show 3, 5 or 8) lists what you launched
+last, under the favorites, instead of the bare input line. Only apps, files,
+folders and menu actions are recorded: never clipboard entries, typed commands,
+kill, calculator or web searches. Favorites and history live in
+`~/.local/state/omarunner/history.json`.
 
 Both pages are stored in `~/.config/omarchy/omarunner.json` (`sources`,
 `settings`, and `webSearchUrl` for the fallback web search, DuckDuckGo by
