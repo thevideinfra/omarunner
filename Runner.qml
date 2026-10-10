@@ -546,17 +546,22 @@ Item {
   // Favorites and recent launches for an empty root; the Recent launches
   // setting picks how many (0 = off).
   function startGroups() {
+    var entries = historyStore.history.concat(historyStore.favorites)
+    var skip = HistoryModel.unavailableKeys(entries, root.installedAppIds(), historyStore.missing)
     return HistoryModel.startGroups(historyStore.favorites, historyStore.history,
-      root.settings.recentsOn ? root.settings.recents : 0, root.settings.favoritesOn ? root.settings.favoritesShown : 0)
+      root.settings.recentsOn ? root.settings.recents : 0, root.settings.favoritesOn ? root.settings.favoritesShown : 0, skip)
   }
 
-  // Ctrl+P: pin or unpin the highlighted result.
+  // Ids of the installed applications, or [] while the list is still loading.
+  function installedAppIds() {
+    return appSource.rows().map(function(r) { return r.appId })
+  }
+
+  // Ctrl+P: pin or unpin the highlighted result. The favorites change refreshes
+  // the page and the list (see historyStore).
   function togglePinSelected() {
     if (!root.cursorActive || root.selectedIndex < 0 || root.selectedIndex >= displayModel.count) return
-    if (historyStore.togglePin(displayModel.get(root.selectedIndex))) {
-      root.refreshSourcePage()
-      root.rebuildDisplay()
-    }
+    historyStore.togglePin(displayModel.get(root.selectedIndex))
   }
 
   // Ctrl+Up / Ctrl+Down on the Settings → Favorites page.
@@ -564,8 +569,8 @@ Item {
     if (!root.cursorActive || root.selectedIndex < 0 || root.selectedIndex >= displayModel.count) return
     var row = displayModel.get(root.selectedIndex)
     if (row.kind !== "favorite-item") return
-    historyStore.move(row.value, delta)
-    root.refreshSourcePage()
+    // The cursor follows the item only when it actually moved.
+    if (!historyStore.move(String(row.value), delta)) return
     root.selectedIndex = Math.max(0, Math.min(displayModel.count - 1, root.selectedIndex + delta))
     root.revealCursor()
   }
@@ -841,14 +846,13 @@ Item {
     } else if (row.kind === "app") {
       var appId = row.appId
       var label = row.label
-      historyStore.record(row)
+      if (root.installedAppIds().indexOf(appId) >= 0) historyStore.record(row)
       opened = false
       filterText = ""
       appSource.launch(appId, label)
     } else if (row.kind === "favorite-item") {
       // Enter on a pinned item in Settings → Favorites unpins it.
-      historyStore.remove(row.value)
-      root.refreshSourcePage()
+      historyStore.remove(String(row.value))
     } else if (row.kind === "note") {
       // Informational row.
     } else if (row.kind === "source-toggle") {
@@ -880,7 +884,7 @@ Item {
     } else if (row.kind === "source") {
       var source = null
       for (var i = 0; i < root.sources.length; i++) if (root.sources[i].sourceId === row.sourceId) source = root.sources[i]
-      historyStore.record(row)
+      if (source) historyStore.record(row)
       opened = false
       filterText = ""
       if (source) source.activate(row.value, modifiers || 0)
@@ -941,6 +945,7 @@ Item {
     root.disarmPointer()
     root.evaluateGuards()
     opened = true
+    historyStore.checkPaths()
     rebuildDisplay()
     invalidateVolatileProvider(activeMenu)
     loadProviderForMenu(activeMenu)
@@ -956,6 +961,7 @@ Item {
   HistoryStore {
     id: historyStore
     onFavoritesChanged: if (root.rowsLoaded) root.refreshSourcePage()
+    onMissingChanged: if (root.opened && root.activeMenu === "root" && !root.filterText.trim()) root.rebuildDisplay()
     onHistoryChanged: if (root.opened && root.activeMenu === "root" && !root.filterText.trim()) root.rebuildDisplay()
   }
 

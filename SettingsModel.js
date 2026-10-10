@@ -6,7 +6,7 @@ function CHOICES() {
       { value: "theme", label: "Theme" }, { value: "blue", label: "Blue" }, { value: "cyan", label: "Cyan" },
       { value: "green", label: "Green" }, { value: "magenta", label: "Magenta" }, { value: "yellow", label: "Yellow" },
       { value: "red", label: "Red" }, { value: "orange", label: "Orange" }] },
-    { key: "location", label: "Location", choices: [
+    { key: "location", label: "Position", choices: [
       { value: "edge", label: "Very top" }, { value: "high", label: "Almost top" }, { value: "top", label: "Higher" },
       { value: "low", label: "High" }, { value: "center", label: "Center" },
       { value: "down1", label: "Low" }, { value: "down2", label: "Lower" }] },

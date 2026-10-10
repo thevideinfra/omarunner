@@ -451,3 +451,18 @@ test("picking Center pins the card where it opens, not centred on the tall Setti
   assert.match(qml, /function releaseCardTop\(\) \{ cardTop = locationY >= 0 \? locationY : closedCenterTop; maxRowsHeight = -1 \}/)
   assert.match(qml, /closedCenterTop: Math\.max\(Style\.gapsOut, Math\.round\(\(height - \(root\.contentMargin \* 2 \+ root\.headerHeight\)\) \/ 2\)\)/)
 })
+
+test("history store: reads before it writes, backs up a broken file, keeps the directory private", async () => {
+  const store = await readFile(join(root, "HistoryStore.qml"), "utf8")
+  assert.match(store, /if \(root\.loaded\) root\.flush\(\)/)
+  assert.match(store, /root\.merged\(root\.history, data\.history/)
+  assert.match(store, /history\.json\.bak|root\.path \+ "\.bak"/)
+  assert.match(store, /chmod 700/)
+  assert.match(store, /atomicWrites: true/)
+})
+
+test("favorites actions rely on the store's change handler and only follow real moves", () => {
+  assert.match(qml, /if \(!historyStore\.move\(String\(row\.value\), delta\)\) return/)
+  assert.match(qml, /if \(root\.installedAppIds\(\)\.indexOf\(appId\) >= 0\) historyStore\.record\(row\)/)
+  assert.match(qml, /if \(source\) historyStore\.record\(row\)/)
+})

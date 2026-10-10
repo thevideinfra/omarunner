@@ -103,6 +103,50 @@ function toggleFavorite(favorites, entry) {
   return list.length >= 30 ? list : list.concat([added])
 }
 
+// True when two lists hold the same keys (in the same order when `ordered`).
+function sameKeys(a, b, ordered) {
+  var x = (Array.isArray(a) ? a : []).map(function(e) { return e.key })
+  var y = (Array.isArray(b) ? b : []).map(function(e) { return e.key })
+  if (x.length !== y.length) return false
+  if (!ordered) { x.sort(); y.sort() }
+  for (var i = 0; i < x.length; i++) if (x[i] !== y[i]) return false
+  return true
+}
+
+// The filesystem path of an entry, or "" (apps, menu actions, URLs).
+function entryPath(entry) {
+  if (!entry || entry.kind !== "source" || ["files", "folders", "recent"].indexOf(entry.sourceId) < 0) return ""
+  return typeof entry.value === "string" && entry.value.charAt(0) === "/" ? entry.value : ""
+}
+
+function entryPaths(entries) {
+  var seen = ({})
+  var out = []
+  var list = Array.isArray(entries) ? entries : []
+  for (var i = 0; i < list.length; i++) {
+    var path = entryPath(list[i])
+    if (path && !seen[path]) { seen[path] = true; out.push(path) }
+  }
+  return out
+}
+
+// Keys of entries to leave out of the start screen: apps no longer installed
+// (`installed` is a list of app ids; null skips the check) and paths that are
+// gone (`missing` maps path -> true).
+function unavailableKeys(entries, installed, missing) {
+  var skip = ({})
+  var ids = Array.isArray(installed) && installed.length > 0 ? installed : null
+  var list = Array.isArray(entries) ? entries : []
+  for (var i = 0; i < list.length; i++) {
+    var e = list[i]
+    if (!e) continue
+    if (e.kind === "app" && ids && ids.indexOf(e.appId) < 0) skip[e.key] = true
+    var path = entryPath(e)
+    if (path && missing && missing[path]) skip[e.key] = true
+  }
+  return skip
+}
+
 function removeFavorite(favorites, key) {
   return clean(favorites, 30).filter(function(e) { return e.key !== key })
 }
@@ -131,9 +175,10 @@ function rowFromEntry(entry, section) {
 // most recent launches that are not already favorites (`recents` of them; 0
 // turns the history off). `favoritesShown` caps the favorites listed (0 hides
 // them; omitted shows all). Pinned items stay out of the history either way.
-function startGroups(favorites, history, recents, favoritesShown) {
+function startGroups(favorites, history, recents, favoritesShown, skip) {
   var groups = []
-  var favs = clean(favorites, 30)
+  var hidden = skip || ({})
+  var favs = clean(favorites, 30).filter(function(e) { return !hidden[e.key] })
   var shown = typeof favoritesShown === "number" ? favoritesShown : 30
   if (shown > 0 && favs.length > 0) {
     groups.push({ section: "start:favorites", label: "Favorites",
@@ -141,7 +186,7 @@ function startGroups(favorites, history, recents, favoritesShown) {
   }
   var count = typeof recents === "number" ? recents : 0
   if (count > 0) {
-    var rows = clean(history, 50).filter(function(e) { return !isFavorite(favs, e.key) }).slice(0, count)
+    var rows = clean(history, 50).filter(function(e) { return !isFavorite(favs, e.key) && !hidden[e.key] }).slice(0, count)
     if (rows.length > 0) {
       groups.push({ section: "start:history", label: "Recent launches",
         rows: rows.map(function(e) { return rowFromEntry(e, "start:history") }) })
@@ -153,5 +198,6 @@ function startGroups(favorites, history, recents, favoritesShown) {
 if (typeof module !== "undefined") {
   module.exports = { recordable: recordable, pinnable: pinnable, keyFor: keyFor, entryFromRow: entryFromRow,
     clean: clean, record: record, isFavorite: isFavorite, toggleFavorite: toggleFavorite, removeFavorite: removeFavorite,
-    moveFavorite: moveFavorite, rowFromEntry: rowFromEntry, startGroups: startGroups }
+    moveFavorite: moveFavorite, sameKeys: sameKeys, entryPath: entryPath, entryPaths: entryPaths,
+    unavailableKeys: unavailableKeys, rowFromEntry: rowFromEntry, startGroups: startGroups }
 }

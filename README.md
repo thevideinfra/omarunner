@@ -253,7 +253,7 @@ Omarchy and Session can be switched off the same way.
 
 The **Omarunner Settings** page (gear, `Ctrl+S`) holds: accent colour, border,
 category column, corner radius, Ctrl+number hints, Favorites, font, fuzzy
-matching, hint size, location, opacity, Recent launches, row height, rows before
+matching, hint size, position, opacity, Recent launches, row height, rows before
 scrolling, text size, the version and GitHub link, and width. On/off settings show an **ON**/**OFF** badge after their
 name; a choice (open it to see the presets, the current one has a dot) offers
 presets and a **Custom…** entry: open the setting and type a value (a number in
@@ -266,22 +266,24 @@ ON/OFF badges and the choice dots. While Settings is open, the header shows the
 version and a GitHub icon beside the gear; the icon opens the project on GitHub.
 Turn it off with **Version and GitHub link**.
 
-**Location** puts the launcher in the centre of the screen (default), higher up
+**Position** puts the launcher in the centre of the screen (default), higher up
 (High, Higher, Almost top, Very top just under the bar) or a little lower (Low,
 Lower). Results grow downward from the input line.
 
-**Favorites** are results you pin with `Ctrl+P` (apps, files, folders, menu
-entries). They are listed under a *Favorites* heading whenever omarunner opens
-with nothing typed. Settings → Favorites lists them: Enter unpins one, and
-`Ctrl+Up` / `Ctrl+Down` reorders. Open Favorites to switch
-the start-screen list **ON**/**OFF** (on by default) and pick how many show (3, 5, 8,
-All or a typed number).
+**Favorites** are results you pin with `Ctrl+P`: apps, files, folders, opened
+locations and menu entries (up to 30). While Favorites is **ON** (the default),
+they are listed under a *Favorites* heading whenever omarunner opens with nothing
+typed. Settings → Favorites lists them: Enter unpins one, and `Ctrl+Up` /
+`Ctrl+Down` reorders. Open it to switch the start-screen list **ON**/**OFF** and
+pick how many show (3, 5, 8, All or a typed number).
 
-**Recent launches** (a switch, off by default, with 3, 5, 8 or a typed number to show) lists what you launched
-last, under the favorites, instead of the bare input line. Only apps, files,
-folders and menu actions are recorded: never clipboard entries, typed commands,
-kill, calculator or web searches. Favorites and history live in
-`~/.local/state/omarunner/history.json`.
+**Recent launches** (a switch, off by default, with 3, 5, 8 or a typed number to
+show) lists what you launched last, under the favorites, instead of the bare
+input line. Only apps, files, folders (including recent files) and menu actions
+are recorded: never clipboard entries, typed commands, kill, calculator or web
+searches. Apps that were uninstalled and files that no longer exist are left out
+of the list. Favorites and history live in `~/.local/state/omarunner/history.json`,
+in a private directory, because it stores the commands of launched menu actions.
 
 Both pages are stored in `~/.config/omarchy/omarunner.json` (`sources`,
 `settings`, and `webSearchUrl` for the fallback web search, DuckDuckGo by

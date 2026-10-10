@@ -205,7 +205,7 @@ test("the About switch is a normal Settings toggle", () => {
   assert.equal(S.toggled({}, "about").settings.about, false)
 })
 
-// -- Location, recent launches and Favorites.
+// -- Position, recent launches and Favorites.
 
 test("location defaults to the center and offers places above and below", () => {
   assert.equal(S.resolve({}).location, "center")

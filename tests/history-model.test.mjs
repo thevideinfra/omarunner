@@ -112,3 +112,32 @@ test("favoritesShown caps or hides the favorites; pinned items stay out of histo
   const hist = H.record([], favs[0], 1, 50)
   assert.deepEqual(H.startGroups(favs, hist, 5, 0), [])
 })
+
+test("sameKeys compares lists by key, optionally by order", () => {
+  const a = { key: "a" }, b = { key: "b" }
+  assert.equal(H.sameKeys([a, b], [b, a]), true)
+  assert.equal(H.sameKeys([a, b], [b, a], true), false)
+  assert.equal(H.sameKeys([a], [a, b]), false)
+})
+
+test("pinning past the limit changes nothing; moving the first item up changes nothing", () => {
+  let f = []
+  for (let i = 0; i < 30; i++) f = H.toggleFavorite(f, H.entryFromRow({ ...file, value: "/f" + i, label: "f" + i }))
+  const extra = H.entryFromRow({ ...file, value: "/extra", label: "extra" })
+  assert.equal(H.sameKeys(H.toggleFavorite(f, extra), f), true)
+  assert.equal(H.sameKeys(H.moveFavorite(f, f[0].key, -1), f, true), true)
+  assert.equal(H.sameKeys(H.moveFavorite(f, f[0].key, 1), f, true), false)
+})
+
+test("entries whose app is gone or path is missing are left out of the start screen", () => {
+  const gone = H.entryFromRow({ ...file, value: "/gone/a.txt", label: "gone" })
+  const here = H.entryFromRow({ ...file, value: "/here/b.txt", label: "here" })
+  const uninstalled = H.entryFromRow(app)
+  assert.deepEqual(H.entryPaths([gone, here, uninstalled, gone]), ["/gone/a.txt", "/here/b.txt"])
+  assert.equal(H.entryPath({ kind: "source", sourceId: "locations", value: "/x" }), "")
+  const skip = H.unavailableKeys([gone, here, uninstalled], ["other"], { "/gone/a.txt": true })
+  assert.deepEqual(Object.keys(skip).sort(), [gone.key, uninstalled.key].sort())
+  assert.deepEqual(Object.keys(H.unavailableKeys([uninstalled], [], {})), [])
+  const groups = H.startGroups([gone, here], [uninstalled], 5, 30, skip)
+  assert.deepEqual(groups.map(g => g.rows.map(r => r.label)), [["here"]])
+})
