@@ -10,6 +10,10 @@ and more. The first nine results launch with `Ctrl+1` to `Ctrl+9`.
 It is a fork of the first-party `omarchy.menu` plugin, so it follows the active
 Omarchy theme with no configuration.
 
+<div align="center">
+<img src="preview.png" alt="omarunner preview" width="720">
+</div>
+
 ## Screenshots
 
 <div align="center">
