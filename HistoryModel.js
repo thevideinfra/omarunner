@@ -130,6 +130,17 @@ function entryPaths(entries) {
   return out
 }
 
+// A shell check listing which of `paths` are gone: { args, input }. The paths
+// go in on stdin (a count, then one per line), not as arguments, which other
+// local users can read in /proc while the process runs.
+function missingCheck(paths) {
+  var list = (Array.isArray(paths) ? paths : []).filter(function(p) { return typeof p === "string" && p.indexOf("\n") < 0 })
+  return {
+    args: ["sh", "-c", 'IFS= read -r n; while [ "$n" -gt 0 ] && IFS= read -r p; do [ -e "$p" ] || printf "%s\\n" "$p"; n=$((n-1)); done; true', "sh"],
+    input: list.length + "\n" + list.join("\n") + "\n"
+  }
+}
+
 // Keys of entries to leave out of the start screen: apps no longer installed
 // (`installed` is a list of app ids; null skips the check) and paths that are
 // gone (`missing` maps path -> true).
@@ -198,6 +209,6 @@ function startGroups(favorites, history, recents, favoritesShown, skip) {
 if (typeof module !== "undefined") {
   module.exports = { recordable: recordable, pinnable: pinnable, keyFor: keyFor, entryFromRow: entryFromRow,
     clean: clean, record: record, isFavorite: isFavorite, toggleFavorite: toggleFavorite, removeFavorite: removeFavorite,
-    moveFavorite: moveFavorite, sameKeys: sameKeys, entryPath: entryPath, entryPaths: entryPaths,
+    moveFavorite: moveFavorite, sameKeys: sameKeys, entryPath: entryPath, entryPaths: entryPaths, missingCheck: missingCheck,
     unavailableKeys: unavailableKeys, rowFromEntry: rowFromEntry, startGroups: startGroups }
 }

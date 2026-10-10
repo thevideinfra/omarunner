@@ -103,7 +103,8 @@ Item {
   function checkPaths() {
     var paths = HistoryModel.entryPaths(root.history.concat(root.favorites))
     if (paths.length === 0) { root.missing = ({}); return }
-    checker.run(["sh", "-c", "for p in \"$@\"; do [ -e \"$p\" ] || printf '%s\\n' \"$p\"; done", "sh"].concat(paths), 0, "")
+    var check = HistoryModel.missingCheck(paths)
+    checker.run(check.args, 0, "", check.input)
   }
 
   LatestProcess {

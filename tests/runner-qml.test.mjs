@@ -353,7 +353,7 @@ test("the Settings page passes the keybinding wizard command to its Keybindingsâ
 
 test("recent files are checked for existence before they are offered", async () => {
   const src = await readFile(join(root, "RecentSource.qml"), "utf8")
-  assert.ok(src.includes("RecentModel.existsArgs("))
+  assert.ok(src.includes("RecentModel.existsCheck("))
   assert.ok(src.includes("RecentModel.keepExisting(root.parsed, output)"))
 })
 
@@ -465,4 +465,14 @@ test("favorites actions rely on the store's change handler and only follow real 
   assert.match(qml, /if \(!historyStore\.move\(String\(row\.value\), delta\)\) return/)
   assert.match(qml, /if \(root\.installedAppIds\(\)\.indexOf\(appId\) >= 0\) historyStore\.record\(row\)/)
   assert.match(qml, /if \(source\) historyStore\.record\(row\)/)
+})
+
+test("private paths reach their checker on stdin, not as arguments", async () => {
+  const lp = await readFile(join(root, "LatestProcess.qml"), "utf8")
+  assert.match(lp, /onStarted: if \(proc\.input !== ""\) proc\.write\(proc\.input\)/)
+  assert.match(lp, /proc\.stdinEnabled = proc\.input !== ""/)
+  const recent = await readFile(join(root, "RecentSource.qml"), "utf8")
+  assert.match(recent, /checker\.run\(check\.args, 0, "", check\.input\)/)
+  const store = await readFile(join(root, "HistoryStore.qml"), "utf8")
+  assert.match(store, /checker\.run\(check\.args, 0, "", check\.input\)/)
 })

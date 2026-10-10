@@ -24,9 +24,15 @@ function parseXbel(xmlText) {
 
 // The list keeps files that were deleted or live on an unmounted drive. One
 // process checks which paths still exist; the output is one existing path per
-// line, and the entries keep their order.
-function existsArgs(paths) {
-  return ["sh", "-c", 'for p; do [ -e "$p" ] && printf "%s\\n" "$p"; done', "sh"].concat(paths)
+// line, and the entries keep their order. The paths go in on stdin (a count,
+// then one per line), never as arguments: those are readable by other local
+// users in /proc while the process runs, and these are private file names.
+function existsCheck(paths) {
+  var list = (Array.isArray(paths) ? paths : []).filter(function(p) { return typeof p === "string" && p.indexOf("\n") < 0 })
+  return {
+    args: ["sh", "-c", 'IFS= read -r n; while [ "$n" -gt 0 ] && IFS= read -r p; do [ -e "$p" ] && printf "%s\\n" "$p"; n=$((n-1)); done; true', "sh"],
+    input: list.length + "\n" + list.join("\n") + "\n"
+  }
 }
 
 function keepExisting(entries, existingText) {
@@ -90,6 +96,6 @@ function inOrder(needle, text) {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { parseXbel: parseXbel, matches: matches, existsArgs: existsArgs, keepExisting: keepExisting,
+  module.exports = { parseXbel: parseXbel, matches: matches, existsCheck: existsCheck, keepExisting: keepExisting,
     claims: claims, filter: filter, forQuery: forQuery }
 }

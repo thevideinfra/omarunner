@@ -56,7 +56,8 @@ Item {
   function refresh(list) {
     root.parsed = list
     if (list.length === 0) { root.entries = []; return }
-    checker.run(RecentModel.existsArgs(list.map(function(e) { return e.path })), 0, "")
+    var check = RecentModel.existsCheck(list.map(function(e) { return e.path }))
+    checker.run(check.args, 0, "", check.input)
   }
 
   LatestProcess {

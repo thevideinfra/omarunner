@@ -13,21 +13,28 @@ Item {
   property var pendingArgs: null
   property int pendingSerial: 0
   property string pendingQuery: ""
+  property string pendingInput: ""
 
-  function run(args, serial, query) {
+  // `input`, when given, is written to the process's stdin once it starts. Use
+  // it for anything private (file names): arguments are readable by other
+  // local users in /proc while the process runs, stdin is not.
+  function run(args, serial, query, input) {
     if (proc.running) {
       root.pendingArgs = args
       root.pendingSerial = serial
       root.pendingQuery = query
+      root.pendingInput = input || ""
       proc.running = false
       return
     }
-    root.start(args, serial, query)
+    root.start(args, serial, query, input || "")
   }
 
-  function start(args, serial, query) {
+  function start(args, serial, query, input) {
     proc.serial = serial
     proc.query = query
+    proc.input = input || ""
+    proc.stdinEnabled = proc.input !== ""
     proc.collected = ""
     proc.command = args
     proc.running = true
@@ -42,14 +49,16 @@ Item {
     id: proc
     property int serial: 0
     property string query: ""
+    property string input: ""
     property string collected: ""
+    onStarted: if (proc.input !== "") proc.write(proc.input)
     stdout: SplitParser { onRead: function(data) { proc.collected += data + "\n" } }
     onExited: function(exitCode) {
       root.finished(proc.serial, proc.query, exitCode, proc.collected)
       if (root.pendingArgs) {
         var args = root.pendingArgs
         root.pendingArgs = null
-        root.start(args, root.pendingSerial, root.pendingQuery)
+        root.start(args, root.pendingSerial, root.pendingQuery, root.pendingInput)
       }
     }
   }

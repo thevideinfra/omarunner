@@ -141,3 +141,11 @@ test("entries whose app is gone or path is missing are left out of the start scr
   const groups = H.startGroups([gone, here], [uninstalled], 5, 30, skip)
   assert.deepEqual(groups.map(g => g.rows.map(r => r.label)), [["here"]])
 })
+
+test("the missing-path check takes paths on stdin and reports only the gone ones", async () => {
+  const { execFileSync } = await import("node:child_process")
+  const check = H.missingCheck(["/etc/hostname", "/no/such/file-omarunner", "/etc"])
+  assert.ok(!check.args.join(" ").includes("/etc/hostname"))
+  const out = execFileSync(check.args[0], check.args.slice(1), { input: check.input }).toString()
+  assert.equal(out, "/no/such/file-omarunner\n")
+})

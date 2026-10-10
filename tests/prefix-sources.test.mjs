@@ -280,9 +280,12 @@ test("ordinary bare domains are still web addresses", () => {
 
 test("recent entries whose files are gone are dropped, order kept", () => {
   const entries = R.parseXbel(XBEL)
-  const args = R.existsArgs(entries.map(e => e.path))
-  assert.equal(args[0], "sh")
-  assert.deepEqual(args.slice(-3), entries.map(e => e.path))
+  const check = R.existsCheck(entries.map(e => e.path))
+  assert.equal(check.args[0], "sh")
+  // Private file names go in on stdin, never in the argument list.
+  assert.ok(entries.every(e => !check.args.join(" ").includes(e.path)))
+  assert.equal(check.input, entries.length + "\n" + entries.map(e => e.path).join("\n") + "\n")
+  assert.equal(R.existsCheck(["/a\nb", "/c"]).input, "1\n/c\n")
   const kept = R.keepExisting(entries, "/home/ks/Docs/report.odt\n/home/ks/reports/q3.xlsx\n")
   assert.deepEqual(kept.map(e => e.path), ["/home/ks/reports/q3.xlsx", "/home/ks/Docs/report.odt"])
   assert.deepEqual(R.keepExisting(entries, ""), [])
@@ -301,4 +304,11 @@ test("recent claims its keyword and lists the newest entries first", () => {
     ["/home/ks/reports/q3.xlsx", "/home/ks/Docs/report.odt"])
   assert.deepEqual(R.forQuery(entries, "recent q3", false, 8), ["/home/ks/reports/q3.xlsx"])
   assert.deepEqual(R.forQuery(entries, "report", false, 8), R.matches(entries, "report", false))
+})
+
+test("the recent existence check runs for real and keeps only existing paths", async () => {
+  const { execFileSync } = await import("node:child_process")
+  const check = R.existsCheck(["/etc/hostname", "/no/such/file-omarunner", "/etc"])
+  const out = execFileSync(check.args[0], check.args.slice(1), { input: check.input }).toString()
+  assert.equal(out, "/etc/hostname\n/etc\n")
 })
