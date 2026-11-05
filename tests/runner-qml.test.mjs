@@ -143,8 +143,8 @@ test("rows are compact and the list caps at nine before folding", () => {
   assert.equal(qml.includes("detailRowHeight"), false)
 })
 
-test("the category column only exists for a root search", () => {
-  assert.match(qml, /readonly property bool showCategories: root\.activeMenu === "root" && !root\.collapsed/)
+test("the category column exists for the root and for pages that carry section labels", () => {
+  assert.match(qml, /readonly property bool showCategories: .*!root\.collapsed && \(root\.activeMenu === "root" \|\|/)
   assert.match(qml, /property int categoryWidth:/)
 })
 
@@ -479,4 +479,8 @@ test("private paths reach their checker on stdin, not as arguments", async () =>
 
 test("the Center position anchors the card on the input line for every page", () => {
   assert.match(qml, /readonly property int centeredTop: locationY >= 0 \? locationY : closedCenterTop/)
+})
+
+test("the category column also shows on a page that has section labels (Apps favorites)", () => {
+  assert.match(qml, /readonly property bool showCategories: root\.settings\.categories && !root\.collapsed && \(root\.activeMenu === "root" \|\| Object\.keys\(root\.sectionLabels\)\.length > 0\)/)
 })

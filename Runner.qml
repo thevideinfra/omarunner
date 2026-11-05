@@ -137,7 +137,7 @@ Item {
   // Hairline gap between category groups in a root search.
   property int groupGapHeight: Style.space(5)
   // The KRunner category column: section captions right-aligned on the left.
-  readonly property bool showCategories: root.activeMenu === "root" && !root.collapsed && root.settings.categories
+  readonly property bool showCategories: root.settings.categories && !root.collapsed && (root.activeMenu === "root" || Object.keys(root.sectionLabels).length > 0)
   property int categoryWidth: root.showCategories ? Style.space(120) : 0
   property bool searchDivider: false
   property int layoutSerial: 0
