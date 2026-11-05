@@ -287,6 +287,11 @@ function pageRows(settingsIn, setupCommand, favorites) {
       target: "", description: "Press Ctrl+P on a result to pin it", action: "", provider: "", aliases: [], when: "", checked: "",
       value: "", order: 0, section: "group:pinned" })
   }
+  if (pinned.length > 0) {
+    pins.push({ id: favId + ".hint", parent: favId, kind: "note", icon: "", iconFont: "", label: "Reorder", title: "",
+      target: "", description: "Ctrl+Up / Ctrl+Down moves the selected pin · Enter unpins it", action: "", provider: "", aliases: [],
+      when: "", checked: "", value: "", order: 0, section: "group:pinned" })
+  }
   for (var p = 0; p < pinned.length; p++) {
     pins.push({ id: favId + "." + p, parent: favId, kind: "favorite-item", icon: "", iconFont: "", label: String(pinned[p].label || ""),
       title: "", target: "", description: String(pinned[p].detail || ""), action: "", provider: "", aliases: [], when: "",

@@ -1271,8 +1271,10 @@ Item {
       default: return -1
       }
     }
-    readonly property int centeredTop: locationY >= 0 ? locationY
-      : Math.max(Style.gapsOut, Math.round((height - root.cardHeight) / 2))
+    // Center keeps the input line where the bare root puts it, whatever page
+    // opens, so Super+Space and Super+Alt+Space start at the same spot and a
+    // tall list grows downward instead of lifting the card.
+    readonly property int centeredTop: locationY >= 0 ? locationY : closedCenterTop
     readonly property int effectiveCardTop: cardTop >= 0 ? cardTop : centeredTop
     // A root start screen (bare input line, or the few Favorites and recent
     // launches) has too few rows to cap the card with, and freezing that

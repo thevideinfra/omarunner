@@ -476,3 +476,7 @@ test("private paths reach their checker on stdin, not as arguments", async () =>
   const store = await readFile(join(root, "HistoryStore.qml"), "utf8")
   assert.match(store, /checker\.run\(check\.args, 0, "", check\.input\)/)
 })
+
+test("the Center position anchors the card on the input line for every page", () => {
+  assert.match(qml, /readonly property int centeredTop: locationY >= 0 \? locationY : closedCenterTop/)
+})

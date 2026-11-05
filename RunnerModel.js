@@ -627,6 +627,27 @@ function withSessionAliases(items) {
   return out
 }
 
+// The favorites group's app rows that are still installed, as the Apps page
+// rows themselves (so they carry the live label and icon), in pinned order.
+function favoriteAppRows(startGroups, appRows) {
+  var groups = isList(startGroups) ? startGroups : []
+  var byAppId = ({})
+  for (var a = 0; a < appRows.length; a++) byAppId[appRows[a].appId] = appRows[a]
+  var out = []
+  for (var g = 0; g < groups.length; g++) {
+    if (!groups[g] || groups[g].section !== "start:favorites" || !isList(groups[g].rows)) continue
+    for (var r = 0; r < groups[g].rows.length; r++) {
+      var fav = groups[g].rows[r]
+      if (!fav || fav.kind !== "app" || !byAppId[fav.appId]) continue
+      var copy = ({})
+      for (var key in byAppId[fav.appId]) copy[key] = byAppId[fav.appId][key]
+      copy.section = "start:favorites"
+      out.push(copy)
+    }
+  }
+  return out
+}
+
 // hiddenGroups: { apps: true, menu: true, session: true } switches a menu-tree group off in
 // the root search (Sources page); submenus are never filtered.
 // fuzzy: letters-in-order matching for queries of 3+ characters.
@@ -674,6 +695,15 @@ function buildRows(items, itemOrder, whenResults, checkedResults, activeMenu, qu
         if (aId > bId) return 1
         return 0
       })
+      // Pinned apps lead the list under a Favorites heading and are not
+      // repeated below. Only installed apps (rows above) count.
+      var pinned = favoriteAppRows(startGroups, rows)
+      if (pinned.length > 0) {
+        var pinnedIds = ({})
+        for (var pi = 0; pi < pinned.length; pi++) pinnedIds[pinned[pi].appId] = true
+        rows = pinned.concat(rows.filter(function(r) { return !pinnedIds[r.appId] }))
+        return { activeMenu: active, rows: rows, searchDivider: false, sectionLabels: { "start:favorites": "Favorites" } }
+      }
     }
 
     return { activeMenu: active, rows: rows, searchDivider: false, sectionLabels: {} }

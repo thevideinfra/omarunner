@@ -286,7 +286,18 @@ test("favorites switch on by default; the amount is 3, 5, 8 or All", () => {
 test("pinned items and the no-favorites note sit in their own group, so a divider separates them", () => {
   const fav = [{ key: "app:foot", kind: "app", label: "foot", detail: "", appId: "foot" }]
   const rows = S.pageRows(S.defaults(), "", fav).rows.filter(r => r.parent === "omarunner-settings.favorites")
-  assert.deepEqual(rows.map(r => r.section || ""), ["", "", "", "", "", "", "group:pinned"])
+  assert.deepEqual(rows.map(r => r.section || ""), ["", "", "", "", "", "", "group:pinned", "group:pinned"])  // hint row + the pin
   const none = S.pageRows(S.defaults(), "", []).rows.filter(r => r.kind === "note")
   assert.equal(none[0].section, "group:pinned")
+})
+
+test("the Favorites page tells how to reorder and unpin once something is pinned", () => {
+  const favorites = [
+    { key: "app:firefox", kind: "app", label: "Firefox", detail: "", appId: "firefox" },
+    { key: "app:kitty", kind: "app", label: "Kitty", detail: "", appId: "kitty" }
+  ]
+  const rows = S.pageRows(S.defaults(), "", favorites).rows.filter(r => r.parent === "omarunner-settings.favorites")
+  const notes = rows.filter(r => r.kind === "note")
+  assert.deepEqual(notes.map(r => [r.label, r.description]), [["Reorder", "Ctrl+Up / Ctrl+Down moves the selected pin · Enter unpins it"]])
+  assert.ok(rows.indexOf(notes[0]) < rows.findIndex(r => r.kind === "favorite-item"), "hint comes before the pins")
 })
