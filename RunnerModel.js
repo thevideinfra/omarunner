@@ -24,7 +24,9 @@ function normalizeItem(id, raw) {
     parent = id.indexOf(".") >= 0 ? id.split(".").slice(0, -1).join(".") : "root"
   if (id === "root") parent = ""
 
-  var kind = value.action ? "action" : (value.target ? "link" : "menu")
+  // A provider fills the row's children, so it is a menu even when Omarchy
+  // also gives it an action (4.5: Apps opens the dock layout).
+  var kind = value.action && !value.provider ? "action" : (value.target ? "link" : "menu")
 
   return {
     id: id,
