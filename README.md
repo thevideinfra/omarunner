@@ -14,6 +14,10 @@ Omarchy theme with no configuration.
 <img src="preview.png" alt="omarunner preview" width="720">
 </div>
 
+## Verified on
+
+Omarchy 4.5.0-3 with Hyprland 0.56.2.
+
 ## Screenshots
 
 <div align="center">
@@ -47,7 +51,7 @@ Omarchy theme with no configuration.
 ## Requirements
 
 - Omarchy 4 with its Lua Hyprland config (`~/.config/hypr/bindings.lua`) and the
-  Omarchy shell (Quickshell). Verified on Omarchy 4.0.4-1 with Hyprland 0.56.
+  Omarchy shell (Quickshell). See [Verified on](#verified-on) for the tested versions.
 - Older Omarchy releases that configure Hyprland through `hyprland.conf` are not
   supported: the keybinding steps below do not apply there, and focusing a
   window from the Windows results uses Hyprland's Lua dispatcher.
@@ -272,14 +276,20 @@ Turn it off with **Version and GitHub link**.
 
 **Position** puts the launcher in the centre of the screen (default), higher up
 (High, Higher, Almost top, Very top just under the bar) or a little lower (Low,
-Lower). Results grow downward from the input line.
+Lower). Results grow downward from the input line, and the input line sits at
+the same spot on every page, so the Apps page opens where the root does.
 
 **Favorites** are results you pin with `Ctrl+P`: apps, files, folders, opened
 locations and menu entries (up to 30). While Favorites is **ON** (the default),
 they are listed under a *Favorites* heading whenever omarunner opens with nothing
 typed. Settings → Favorites lists them: Enter unpins one, and `Ctrl+Up` /
-`Ctrl+Down` reorders. Open it to switch the start-screen list **ON**/**OFF** and
-pick how many show (3, 5, 8, All or a typed number).
+`Ctrl+Down` reorders (the input line on that page reminds you). Open it to switch
+the start-screen list **ON**/**OFF** and pick how many show (3, 5, 8, All or a
+typed number).
+
+The **Apps** page (`SUPER + ALT + SPACE`) lists your pinned apps first, under the
+*Favorites* heading with a divider before the rest of the applications; it
+searches apps only, and `Ctrl+P` pins or unpins there too.
 
 **Recent launches** (a switch, off by default, with 3, 5, 8 or a typed number to
 show) lists what you launched last, under the favorites, instead of the bare
@@ -317,7 +327,3 @@ KRunner and the COSMIC launcher.
 ## License
 
 MIT, see [`LICENSE`](LICENSE). Third-party notices are in [`NOTICE`](NOTICE).
-
-## Verified on
-
-Omarchy 4.0.4-1.
