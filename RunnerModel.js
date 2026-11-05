@@ -1,3 +1,9 @@
+// An array stored in a QML `var` property reaches JS as an array-like whose
+// Array.isArray() is false (Omarchy 4.5), so lists are recognised by shape.
+function isList(value) {
+  return Array.isArray(value) || (value !== null && typeof value === "object" && typeof value.length === "number")
+}
+
 function stripJsonc(raw) {
   return String(raw || "")
     .replace(/^\s*\/\/[^\n]*(\n|$)/gm, "")
@@ -5,7 +11,7 @@ function stripJsonc(raw) {
 }
 
 function normalizeAliases(value) {
-  if (Array.isArray(value)) return value.filter(function(v) { return v })
+  if (isList(value)) return value.filter(function(v) { return v })
   if (typeof value === "string" && value) return [value]
   return []
 }
@@ -106,8 +112,8 @@ function mergeMenuSources(defaultItems, userItems) {
 // ids already claimed (including duplicate desktop ids) are listed once.
 function mergeAppRows(items, itemOrder, appRows) {
   var source = items || ({})
-  var order = Array.isArray(itemOrder) ? itemOrder : []
-  var rows = Array.isArray(appRows) ? appRows : []
+  var order = isList(itemOrder) ? itemOrder : []
+  var rows = isList(appRows) ? appRows : []
   var nextItems = ({})
   var nextOrder = []
 
@@ -138,8 +144,8 @@ function mergeAppRows(items, itemOrder, appRows) {
 // from the Enable list — without disturbing static children declared in JSONC.
 function swapProviderRows(items, itemOrder, menuId, rows) {
   var source = items || ({})
-  var order = Array.isArray(itemOrder) ? itemOrder : []
-  var incoming = Array.isArray(rows) ? rows : []
+  var order = isList(itemOrder) ? itemOrder : []
+  var incoming = isList(rows) ? rows : []
   var nextItems = ({})
   var nextOrder = []
 
@@ -177,7 +183,7 @@ function resolveRoute(items, itemOrder, input) {
   var raw = String(input || "").toLowerCase().replace(/_/g, "-")
   if (!raw || raw === "go" || raw === "menu") return "root"
   if (item(items, raw)) return raw
-  var order = Array.isArray(itemOrder) ? itemOrder : []
+  var order = isList(itemOrder) ? itemOrder : []
   for (var i = 0; i < order.length; i++) {
     var entry = item(items, order[i])
     if (!entry || entry.kind === "app" || !entry.aliases) continue
@@ -243,7 +249,7 @@ function isDescendantOf(items, id, ancestorId) {
 
 function childCount(items, itemOrder, id) {
   var count = 0
-  var order = Array.isArray(itemOrder) ? itemOrder : []
+  var order = isList(itemOrder) ? itemOrder : []
   for (var i = 0; i < order.length; i++) {
     var entry = item(items, order[i])
     if (entry && entry.parent === id) count += 1
@@ -261,7 +267,7 @@ function isVisible(items, itemOrder, whenResults, entry, depth) {
   if (guard >= 32) return false
 
   var target = entry.kind === "link" ? entry.target : entry.id
-  var order = Array.isArray(itemOrder) ? itemOrder : []
+  var order = isList(itemOrder) ? itemOrder : []
   for (var i = 0; i < order.length; i++) {
     var child = item(items, order[i])
     if (child && child.parent === target && isVisible(items, itemOrder, whenResults, child, guard + 1)) return true
@@ -291,7 +297,7 @@ function leafIdFor(id) {
 function nameSearchText(entry) {
   if (!entry) return ""
   var aliases = []
-  var values = Array.isArray(entry.aliases) ? entry.aliases : []
+  var values = isList(entry.aliases) ? entry.aliases : []
   for (var i = 0; i < values.length; i++) aliases.push(searchableToken(values[i]))
   return [entry.label, searchableToken(leafIdFor(entry.id)), aliases.join(" ")].join(" ").toLowerCase()
 }
@@ -383,7 +389,7 @@ function matchesQuery(entry, query, visible, fuzzy) {
 }
 
 function aliasEquals(entry, needle) {
-  var values = Array.isArray(entry.aliases) ? entry.aliases : []
+  var values = isList(entry.aliases) ? entry.aliases : []
   for (var i = 0; i < values.length; i++) if (searchableToken(values[i]).toLowerCase() === needle) return true
   return false
 }
@@ -609,7 +615,7 @@ function withSessionAliases(items) {
     if (entry && extra[id]) {
       var copy = ({})
       for (var key in entry) copy[key] = entry[key]
-      var aliases = Array.isArray(entry.aliases) ? entry.aliases.slice() : []
+      var aliases = isList(entry.aliases) ? entry.aliases.slice() : []
       for (var a = 0; a < extra[id].length; a++) if (aliases.indexOf(extra[id][a]) < 0) aliases.push(extra[id][a])
       copy.aliases = aliases
       entry = copy
@@ -627,7 +633,7 @@ function withSessionAliases(items) {
 function buildRows(items, itemOrder, whenResults, checkedResults, activeMenu, query, sourceGroups, hiddenGroups, fuzzy, startGroups) {
   var active = item(items, activeMenu) ? activeMenu : "root"
   var trimmed = String(query || "").trim()
-  var order = Array.isArray(itemOrder) ? itemOrder : []
+  var order = isList(itemOrder) ? itemOrder : []
   var rows = []
   var divider = false
 
@@ -635,9 +641,9 @@ function buildRows(items, itemOrder, whenResults, checkedResults, activeMenu, qu
     if (active === "root") {
       var startRows = []
       var startLabels = ({})
-      var starts = Array.isArray(startGroups) ? startGroups : []
+      var starts = isList(startGroups) ? startGroups : []
       for (var sg = 0; sg < starts.length; sg++) {
-        if (!starts[sg] || !Array.isArray(starts[sg].rows) || starts[sg].rows.length === 0) continue
+        if (!starts[sg] || !isList(starts[sg].rows) || starts[sg].rows.length === 0) continue
         for (var sr = 0; sr < starts[sg].rows.length; sr++) startRows.push(starts[sg].rows[sr])
         startLabels[starts[sg].section] = starts[sg].label
       }
@@ -712,9 +718,9 @@ function buildRows(items, itemOrder, whenResults, checkedResults, activeMenu, qu
 
   // The root search feeds the category column. Source groups come as
   // { sourceId, groupLabel, maxRows, rows, leading, exclusive, fallback }.
-  var groups = Array.isArray(sourceGroups) ? sourceGroups : []
+  var groups = isList(sourceGroups) ? sourceGroups : []
   var appendSource = function(group) {
-    if (!group || !Array.isArray(group.rows) || group.rows.length === 0) return
+    if (!group || !isList(group.rows) || group.rows.length === 0) return
     var section = "source:" + group.sourceId
     var cap = group.maxRows > 0 ? group.maxRows : group.rows.length
     for (var s = 0; s < group.rows.length && s < cap; s++) {

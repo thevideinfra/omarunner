@@ -1,5 +1,12 @@
 // Launcher settings: stored under "settings" in omarunner.json, shown on the
 // in-launcher Settings page as preset choices and on/off toggles.
+
+// An array stored in a QML `var` property reaches JS as an array-like whose
+// Array.isArray() is false (Omarchy 4.5), so lists are recognised by shape.
+function isList(value) {
+  return Array.isArray(value) || (value !== null && typeof value === "object" && typeof value.length === "number")
+}
+
 function CHOICES() {
   return [
     { key: "accent", label: "Accent", choices: [
@@ -272,7 +279,7 @@ function pageRows(settingsIn, setupCommand, favorites) {
 
   // Favorites: on/off, how many show, then the pinned items (removable here),
   // or a note on how to pin one.
-  var pinned = Array.isArray(favorites) ? favorites : []
+  var pinned = isList(favorites) ? favorites : []
   var favId = PAGE_ID() + ".favorites"
   var pins = []
   if (pinned.length === 0) {

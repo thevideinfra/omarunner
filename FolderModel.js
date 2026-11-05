@@ -3,6 +3,13 @@
 //
 // Candidates: home folders two levels deep, ~/.config one level deep, and the
 // top level of /. Listed once and refreshed now and then, never per keystroke.
+
+// An array stored in a QML `var` property reaches JS as an array-like whose
+// Array.isArray() is false (Omarchy 4.5), so lists are recognised by shape.
+function isList(value) {
+  return Array.isArray(value) || (value !== null && typeof value === "object" && typeof value.length === "number")
+}
+
 function listArgs() {
   return ["sh", "-c",
     "fd --type d --max-depth 2 --color never . \"$HOME\"; " +
@@ -77,7 +84,7 @@ function matchTier(name, query, fuzzy) {
 function matches(folders, query, fuzzy) {
   var q = String(query || "").trim()
   if (!q || /[\/~\s]/.test(q)) return []
-  var list = Array.isArray(folders) ? folders : []
+  var list = isList(folders) ? folders : []
   var hits = []
   for (var i = 0; i < list.length; i++) {
     var tier = matchTier(list[i].name, q, fuzzy)

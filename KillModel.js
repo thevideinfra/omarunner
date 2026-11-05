@@ -2,6 +2,13 @@
 // SIGTERM, Shift+Enter SIGKILL.
 // A name must follow: a bare "kill" (or "killer") stays an ordinary search
 // instead of blanking the list.
+
+// An array stored in a QML `var` property reaches JS as an array-like whose
+// Array.isArray() is false (Omarchy 4.5), so lists are recognised by shape.
+function isList(value) {
+  return Array.isArray(value) || (value !== null && typeof value === "object" && typeof value.length === "number")
+}
+
 function claims(query) { return /^kill\s+\S/i.test(String(query || "").trim()) }
 
 function filter(query) { return claims(query) ? String(query).trim().slice(4).trim() : "" }
@@ -28,7 +35,7 @@ function parsePs(stdoutText) {
 function matches(processes, filterText) {
   var terms = String(filterText || "").toLowerCase().split(/\s+/).filter(function(t) { return t.length > 0 })
   if (terms.length === 0) return []
-  var list = Array.isArray(processes) ? processes : []
+  var list = isList(processes) ? processes : []
   var hits = []
   for (var i = 0; i < list.length; i++) {
     var haystack = (list[i].name + " " + list[i].args).toLowerCase()

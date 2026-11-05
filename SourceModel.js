@@ -1,6 +1,13 @@
 // The omarunner.json config and the Sources page rows. Sources themselves are
 // registered in Runner.qml (root.sources); nothing here names one, so a source
 // absent from the config is enabled and only an explicit false disables it.
+
+// An array stored in a QML `var` property reaches JS as an array-like whose
+// Array.isArray() is false (Omarchy 4.5), so lists are recognised by shape.
+function isList(value) {
+  return Array.isArray(value) || (value !== null && typeof value === "object" && typeof value.length === "number")
+}
+
 function defaultConfig() {
   return { sources: ({}), webSearchUrl: "https://duckduckgo.com/?q=" }
 }
@@ -46,7 +53,7 @@ function serialize(config) { return JSON.stringify(config, null, 2) + "\n" }
 // the hint shows beside the name.
 function sourcePageRows(config, sourceList) {
   // Alphabetical by the label shown on the page.
-  var list = (Array.isArray(sourceList) ? sourceList : []).slice().sort(function(a, b) {
+  var list = (isList(sourceList) ? sourceList : []).slice().sort(function(a, b) {
     return String(a.groupLabel || a.sourceId || "").localeCompare(String(b.groupLabel || b.sourceId || ""))
   })
   var rows = []

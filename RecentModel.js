@@ -1,4 +1,11 @@
 // Recent files source: ~/.local/share/recently-used.xbel, newest first.
+
+// An array stored in a QML `var` property reaches JS as an array-like whose
+// Array.isArray() is false (Omarchy 4.5), so lists are recognised by shape.
+function isList(value) {
+  return Array.isArray(value) || (value !== null && typeof value === "object" && typeof value.length === "number")
+}
+
 function decodeXml(text) {
   return String(text).replace(/&apos;/g, "'").replace(/&quot;/g, "\"").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&")
 }
@@ -28,7 +35,7 @@ function parseXbel(xmlText) {
 // then one per line), never as arguments: those are readable by other local
 // users in /proc while the process runs, and these are private file names.
 function existsCheck(paths) {
-  var list = (Array.isArray(paths) ? paths : []).filter(function(p) { return typeof p === "string" && p.indexOf("\n") < 0 })
+  var list = (isList(paths) ? paths : []).filter(function(p) { return typeof p === "string" && p.indexOf("\n") < 0 })
   return {
     args: ["sh", "-c", 'IFS= read -r n; while [ "$n" -gt 0 ] && IFS= read -r p; do [ -e "$p" ] && printf "%s\\n" "$p"; n=$((n-1)); done; true', "sh"],
     input: list.length + "\n" + list.join("\n") + "\n"
@@ -39,7 +46,7 @@ function keepExisting(entries, existingText) {
   var present = ({})
   var lines = String(existingText || "").split("\n")
   for (var i = 0; i < lines.length; i++) if (lines[i]) present[lines[i]] = true
-  var list = Array.isArray(entries) ? entries : []
+  var list = isList(entries) ? entries : []
   return list.filter(function(e) { return present[e.path] === true })
 }
 
@@ -51,7 +58,7 @@ function filter(query) { return claims(query) ? String(query).trim().slice(6).tr
 // The paths to show for a query: the newest `limit` entries for a bare
 // "recent", otherwise the matches for the filter (or the whole query).
 function forQuery(entries, query, fuzzy, limit) {
-  var list = Array.isArray(entries) ? entries : []
+  var list = isList(entries) ? entries : []
   if (claims(query)) {
     var term = filter(query)
     if (!term) return list.slice(0, limit).map(function(e) { return e.path })
@@ -68,7 +75,7 @@ function matches(entries, query, fuzzy) {
   var terms = String(query || "").toLowerCase().trim().split(/\s+/).filter(function(t) { return t.length > 0 })
   if (terms.join(" ").length < 2) return []
   var needle = fuzzy === true ? terms.join("") : ""
-  var list = Array.isArray(entries) ? entries : []
+  var list = isList(entries) ? entries : []
   var front = []
   var back = []
   var loose = []

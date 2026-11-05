@@ -6,6 +6,12 @@
 // Only apps, files, folders and menu actions are recorded: never clipboard
 // text, typed commands, kill, calculator results or web searches.
 
+// An array stored in a QML `var` property reaches JS as an array-like whose
+// Array.isArray() is false (Omarchy 4.5), so lists are recognised by shape.
+function isList(value) {
+  return Array.isArray(value) || (value !== null && typeof value === "object" && typeof value.length === "number")
+}
+
 function RECORDED_SOURCES() { return ["files", "folders", "recent"] }
 function PINNABLE_SOURCES() { return ["files", "folders", "recent", "locations"] }
 
@@ -55,7 +61,7 @@ function entryFromRow(row) {
 function clean(list, max) {
   var out = []
   var seen = ({})
-  var source = Array.isArray(list) ? list : []
+  var source = isList(list) ? list : []
   for (var i = 0; i < source.length && out.length < max; i++) {
     var e = source[i]
     if (!e || typeof e !== "object" || typeof e.key !== "string" || !e.key || seen[e.key]) continue
@@ -87,7 +93,7 @@ function record(history, entry, now, max) {
 }
 
 function isFavorite(favorites, key) {
-  var list = Array.isArray(favorites) ? favorites : []
+  var list = isList(favorites) ? favorites : []
   for (var i = 0; i < list.length; i++) if (list[i] && list[i].key === key) return true
   return false
 }
@@ -105,8 +111,8 @@ function toggleFavorite(favorites, entry) {
 
 // True when two lists hold the same keys (in the same order when `ordered`).
 function sameKeys(a, b, ordered) {
-  var x = (Array.isArray(a) ? a : []).map(function(e) { return e.key })
-  var y = (Array.isArray(b) ? b : []).map(function(e) { return e.key })
+  var x = (isList(a) ? a : []).map(function(e) { return e.key })
+  var y = (isList(b) ? b : []).map(function(e) { return e.key })
   if (x.length !== y.length) return false
   if (!ordered) { x.sort(); y.sort() }
   for (var i = 0; i < x.length; i++) if (x[i] !== y[i]) return false
@@ -122,7 +128,7 @@ function entryPath(entry) {
 function entryPaths(entries) {
   var seen = ({})
   var out = []
-  var list = Array.isArray(entries) ? entries : []
+  var list = isList(entries) ? entries : []
   for (var i = 0; i < list.length; i++) {
     var path = entryPath(list[i])
     if (path && !seen[path]) { seen[path] = true; out.push(path) }
@@ -134,7 +140,7 @@ function entryPaths(entries) {
 // go in on stdin (a count, then one per line), not as arguments, which other
 // local users can read in /proc while the process runs.
 function missingCheck(paths) {
-  var list = (Array.isArray(paths) ? paths : []).filter(function(p) { return typeof p === "string" && p.indexOf("\n") < 0 })
+  var list = (isList(paths) ? paths : []).filter(function(p) { return typeof p === "string" && p.indexOf("\n") < 0 })
   return {
     args: ["sh", "-c", 'IFS= read -r n; while [ "$n" -gt 0 ] && IFS= read -r p; do [ -e "$p" ] || printf "%s\\n" "$p"; n=$((n-1)); done; true', "sh"],
     input: list.length + "\n" + list.join("\n") + "\n"
@@ -146,8 +152,8 @@ function missingCheck(paths) {
 // gone (`missing` maps path -> true).
 function unavailableKeys(entries, installed, missing) {
   var skip = ({})
-  var ids = Array.isArray(installed) && installed.length > 0 ? installed : null
-  var list = Array.isArray(entries) ? entries : []
+  var ids = isList(installed) && installed.length > 0 ? installed : null
+  var list = isList(entries) ? entries : []
   for (var i = 0; i < list.length; i++) {
     var e = list[i]
     if (!e) continue

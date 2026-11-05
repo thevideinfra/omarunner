@@ -1,11 +1,18 @@
 // Windows source: open Hyprland windows by title or class. Enter focuses the
 // window, switching workspace as Hyprland does.
+
+// An array stored in a QML `var` property reaches JS as an array-like whose
+// Array.isArray() is false (Omarchy 4.5), so lists are recognised by shape.
+function isList(value) {
+  return Array.isArray(value) || (value !== null && typeof value === "object" && typeof value.length === "number")
+}
+
 function clientsArgs() { return ["hyprctl", "clients", "-j"] }
 
 function parseClients(stdoutText) {
   var parsed
   try { parsed = JSON.parse(String(stdoutText || "")) } catch (e) { return [] }
-  if (!Array.isArray(parsed)) return []
+  if (!isList(parsed)) return []
   var out = []
   for (var i = 0; i < parsed.length; i++) {
     var c = parsed[i]
@@ -26,7 +33,7 @@ function parseClients(stdoutText) {
 function matches(windows, query) {
   var terms = String(query || "").toLowerCase().trim().split(/\s+/).filter(function(t) { return t.length > 0 })
   if (terms.join(" ").length < 2) return []
-  var list = Array.isArray(windows) ? windows : []
+  var list = isList(windows) ? windows : []
   var hits = []
   for (var i = 0; i < list.length; i++) {
     var cls = list[i].appClass.toLowerCase()

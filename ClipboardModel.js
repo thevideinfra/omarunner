@@ -2,6 +2,13 @@
 // "cb git" filters text entries, "cb screenshot" (or image, img, picture,
 // or just "cb scr") lists copied images, and "cb list" opens the full clipboard manager. Only
 // the prefix shows history, so copied secrets never surface in a normal search.
+
+// An array stored in a QML `var` property reaches JS as an array-like whose
+// Array.isArray() is false (Omarchy 4.5), so lists are recognised by shape.
+function isList(value) {
+  return Array.isArray(value) || (value !== null && typeof value === "object" && typeof value.length === "number")
+}
+
 function claims(query) { return /^cb(\s|$)/i.test(String(query || "").trim()) }
 
 function filter(query) { return claims(query) ? String(query).trim().slice(2).trim() : "" }
@@ -11,7 +18,7 @@ function isListCommand(query) { return claims(query) && filter(query).toLowerCas
 function parseHistory(text) {
   var parsed
   try { parsed = JSON.parse(String(text || "")) } catch (e) { return [] }
-  return Array.isArray(parsed) ? parsed : []
+  return isList(parsed) ? parsed : []
 }
 
 function IMAGE_WORDS() { return ["screenshot", "screenshots", "image", "images", "img", "picture", "pictures", "png"] }
@@ -35,7 +42,7 @@ function imageWordMatch(term) {
 // text entries containing every term. Indices are positions in the file.
 function matches(history, filterText) {
   var terms = String(filterText || "").toLowerCase().split(/\s+/).filter(function(t) { return t.length > 0 })
-  var list = Array.isArray(history) ? history : []
+  var list = isList(history) ? history : []
   var imageMode = terms.length === 1 ? imageWordMatch(terms[0]) : ""
   var images = []
   var texts = []
@@ -101,13 +108,13 @@ function rowsFor(history, query, maxRows) {
 }
 
 function resolveIndex(history, text) {
-  var list = Array.isArray(history) ? history : []
+  var list = isList(history) ? history : []
   for (var i = 0; i < list.length; i++) if (isText(list[i]) && list[i].text === text) return i
   return -1
 }
 
 function findImage(history, path) {
-  var list = Array.isArray(history) ? history : []
+  var list = isList(history) ? history : []
   for (var i = 0; i < list.length; i++) if (isImage(list[i]) && list[i].path === path) return list[i]
   return null
 }
