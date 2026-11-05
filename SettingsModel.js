@@ -192,7 +192,7 @@ function hasCustom(key) { return key === "fontFamily" || key === "accent" || !!R
 
 // Hint shown in the input line of a page that has keys of its own.
 function pageHint(menu) {
-  if (menu === PAGE_ID() + ".favorites") return "Favorites · Ctrl+Up / Ctrl+Down move, Enter unpins"
+  if (menu === PAGE_ID() + ".favorites") return "Ctrl+Up/Down moves a pin"
   return ""
 }
 

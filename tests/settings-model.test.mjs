@@ -295,7 +295,7 @@ test("the Favorites page says how to reorder in its input hint, not in a dead ro
   const favorites = [{ key: "app:firefox", kind: "app", label: "Firefox", detail: "", appId: "firefox" }]
   const rows = S.pageRows(S.defaults(), "", favorites).rows.filter(r => r.parent === "omarunner-settings.favorites")
   assert.deepEqual(rows.filter(r => r.kind === "note"), [])
-  assert.equal(S.pageHint("omarunner-settings.favorites"), "Favorites · Ctrl+Up / Ctrl+Down move, Enter unpins")
+  assert.equal(S.pageHint("omarunner-settings.favorites"), "Ctrl+Up/Down moves a pin")
   assert.equal(S.pageHint("omarunner-settings.width"), "")
   assert.equal(S.pageHint("root"), "")
 })
