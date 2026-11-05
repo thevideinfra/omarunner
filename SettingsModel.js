@@ -190,6 +190,12 @@ function customDisplayRow(activeMenu, text) {
 // Choices that allow a typed value: numbers in a range, a font name, a colour.
 function hasCustom(key) { return key === "fontFamily" || key === "accent" || !!RANGES()[key] }
 
+// Hint shown in the input line of a page that has keys of its own.
+function pageHint(menu) {
+  if (menu === PAGE_ID() + ".favorites") return "Favorites · Ctrl+Up / Ctrl+Down move, Enter unpins"
+  return ""
+}
+
 function customHint(key) {
   if (key === "fontFamily") return "Type a font name"
   if (key === "accent") return "Type a hex colour, like #ff8800"
@@ -287,11 +293,6 @@ function pageRows(settingsIn, setupCommand, favorites) {
       target: "", description: "Press Ctrl+P on a result to pin it", action: "", provider: "", aliases: [], when: "", checked: "",
       value: "", order: 0, section: "group:pinned" })
   }
-  if (pinned.length > 0) {
-    pins.push({ id: favId + ".hint", parent: favId, kind: "note", icon: "", iconFont: "", label: "Reorder", title: "",
-      target: "", description: "Ctrl+Up / Ctrl+Down moves the selected pin · Enter unpins it", action: "", provider: "", aliases: [],
-      when: "", checked: "", value: "", order: 0, section: "group:pinned" })
-  }
   for (var p = 0; p < pinned.length; p++) {
     pins.push({ id: favId + "." + p, parent: favId, kind: "favorite-item", icon: "", iconFont: "", label: String(pinned[p].label || ""),
       title: "", target: "", description: String(pinned[p].detail || ""), action: "", provider: "", aliases: [], when: "",
@@ -324,6 +325,6 @@ function applyOption(config, optionValue) {
 
 if (typeof module !== "undefined") {
   module.exports = { defaults: defaults, resolve: resolve, withSetting: withSetting, toggled: toggled,
-    currentLabel: currentLabel, pageRows: pageRows, applyOption: applyOption, customChoice: customChoice,
+    currentLabel: currentLabel, pageHint: pageHint, pageRows: pageRows, applyOption: applyOption, customChoice: customChoice,
     customDisplayRow: customDisplayRow, keyForMenu: keyForMenu, listsInline: listsInline, customHint: customHint }
 }

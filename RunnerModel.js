@@ -698,12 +698,13 @@ function buildRows(items, itemOrder, whenResults, checkedResults, activeMenu, qu
       // Pinned apps lead the list under a Favorites heading and are not
       // repeated below. Only installed apps (rows above) count.
       var pinned = favoriteAppRows(startGroups, rows)
-      if (pinned.length > 0) {
-        var pinnedIds = ({})
-        for (var pi = 0; pi < pinned.length; pi++) pinnedIds[pinned[pi].appId] = true
-        rows = pinned.concat(rows.filter(function(r) { return !pinnedIds[r.appId] }))
-        return { activeMenu: active, rows: rows, searchDivider: false, sectionLabels: { "start:favorites": "Favorites" } }
-      }
+      var pinnedIds = ({})
+      for (var pi = 0; pi < pinned.length; pi++) pinnedIds[pinned[pi].appId] = true
+      var rest = rows.filter(function(r) { return !pinnedIds[r.appId] })
+      for (var ri = 0; ri < rest.length; ri++) rest[ri].section = "group:apps"
+      var appLabels = { "group:apps": "Applications" }
+      if (pinned.length > 0) appLabels["start:favorites"] = "Favorites"
+      return { activeMenu: active, rows: pinned.concat(rest), searchDivider: false, sectionLabels: appLabels }
     }
 
     return { activeMenu: active, rows: rows, searchDivider: false, sectionLabels: {} }
@@ -745,6 +746,11 @@ function buildRows(items, itemOrder, whenResults, checkedResults, activeMenu, qu
       for (var d = 0; d < drilldownRows.length; d++) drilldownRows[d].section = "drilldown"
     }
     rows = currentRows.concat(drilldownRows)
+    // Apps search keeps the root's category column, captioned like the root.
+    if (active === "apps") {
+      for (var ar = 0; ar < rows.length; ar++) rows[ar].section = "group:apps"
+      labels["group:apps"] = "Applications"
+    }
     return { activeMenu: active, rows: rows, searchDivider: divider, sectionLabels: labels }
   }
 

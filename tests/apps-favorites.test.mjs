@@ -30,8 +30,8 @@ test("the Apps page lists favorite apps first under a Favorites heading", () => 
   const { items, itemOrder } = fixture()
   const r = RunnerModel.buildRows(items, itemOrder, {}, {}, "apps", "", [], {}, false, startGroups())
   assert.deepEqual(r.rows.map(x => [x.label, x.section]),
-    [["Kitty", "start:favorites"], ["Alacritty", ""], ["Brave", ""]])
-  assert.equal(r.sectionLabels["start:favorites"], "Favorites")
+    [["Kitty", "start:favorites"], ["Alacritty", "group:apps"], ["Brave", "group:apps"]])
+  assert.deepEqual(r.sectionLabels, { "start:favorites": "Favorites", "group:apps": "Applications" })
 })
 
 test("the Apps page leaves out favorites that are not apps or not installed", () => {
@@ -44,12 +44,13 @@ test("the Apps page without favorites is the plain A-Z list", () => {
   const { items, itemOrder } = fixture()
   const r = RunnerModel.buildRows(items, itemOrder, {}, {}, "apps", "", [], {}, false, [])
   assert.deepEqual(r.rows.map(x => x.label), ["Alacritty", "Brave", "Kitty"])
-  assert.deepEqual(r.sectionLabels, {})
+  assert.deepEqual(r.sectionLabels, { "group:apps": "Applications" })
 })
 
 test("searching the Apps page returns apps only, no favorites group", () => {
   const { items, itemOrder } = fixture()
   const r = RunnerModel.buildRows(items, itemOrder, {}, {}, "apps", "kit", [], {}, false, startGroups())
   assert.deepEqual(r.rows.map(x => x.label), ["Kitty"])
-  assert.equal(r.rows[0].section, "")
+  assert.equal(r.rows[0].section, "group:apps")
+  assert.deepEqual(r.sectionLabels, { "group:apps": "Applications" })
 })

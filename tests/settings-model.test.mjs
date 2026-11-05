@@ -286,18 +286,16 @@ test("favorites switch on by default; the amount is 3, 5, 8 or All", () => {
 test("pinned items and the no-favorites note sit in their own group, so a divider separates them", () => {
   const fav = [{ key: "app:foot", kind: "app", label: "foot", detail: "", appId: "foot" }]
   const rows = S.pageRows(S.defaults(), "", fav).rows.filter(r => r.parent === "omarunner-settings.favorites")
-  assert.deepEqual(rows.map(r => r.section || ""), ["", "", "", "", "", "", "group:pinned", "group:pinned"])  // hint row + the pin
+  assert.deepEqual(rows.map(r => r.section || ""), ["", "", "", "", "", "", "group:pinned"])
   const none = S.pageRows(S.defaults(), "", []).rows.filter(r => r.kind === "note")
   assert.equal(none[0].section, "group:pinned")
 })
 
-test("the Favorites page tells how to reorder and unpin once something is pinned", () => {
-  const favorites = [
-    { key: "app:firefox", kind: "app", label: "Firefox", detail: "", appId: "firefox" },
-    { key: "app:kitty", kind: "app", label: "Kitty", detail: "", appId: "kitty" }
-  ]
+test("the Favorites page says how to reorder in its input hint, not in a dead row", () => {
+  const favorites = [{ key: "app:firefox", kind: "app", label: "Firefox", detail: "", appId: "firefox" }]
   const rows = S.pageRows(S.defaults(), "", favorites).rows.filter(r => r.parent === "omarunner-settings.favorites")
-  const notes = rows.filter(r => r.kind === "note")
-  assert.deepEqual(notes.map(r => [r.label, r.description]), [["Reorder", "Ctrl+Up / Ctrl+Down moves the selected pin · Enter unpins it"]])
-  assert.ok(rows.indexOf(notes[0]) < rows.findIndex(r => r.kind === "favorite-item"), "hint comes before the pins")
+  assert.deepEqual(rows.filter(r => r.kind === "note"), [])
+  assert.equal(S.pageHint("omarunner-settings.favorites"), "Favorites · Ctrl+Up / Ctrl+Down move, Enter unpins")
+  assert.equal(S.pageHint("omarunner-settings.width"), "")
+  assert.equal(S.pageHint("root"), "")
 })

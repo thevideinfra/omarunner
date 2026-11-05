@@ -143,7 +143,7 @@ test("rows are compact and the list caps at nine before folding", () => {
   assert.equal(qml.includes("detailRowHeight"), false)
 })
 
-test("the category column exists for the root and for pages that carry section labels", () => {
+test("the category column exists for the root and the Apps page", () => {
   assert.match(qml, /readonly property bool showCategories: .*!root\.collapsed && \(root\.activeMenu === "root" \|\|/)
   assert.match(qml, /property int categoryWidth:/)
 })
@@ -481,6 +481,10 @@ test("the Center position anchors the card on the input line for every page", ()
   assert.match(qml, /readonly property int centeredTop: locationY >= 0 \? locationY : closedCenterTop/)
 })
 
-test("the category column also shows on a page that has section labels (Apps favorites)", () => {
-  assert.match(qml, /readonly property bool showCategories: root\.settings\.categories && !root\.collapsed && \(root\.activeMenu === "root" \|\| Object\.keys\(root\.sectionLabels\)\.length > 0\)/)
+test("the Apps page keeps the category column while typing, like the root", () => {
+  assert.match(qml, /readonly property bool showCategories: root\.settings\.categories && !root\.collapsed && \(root\.activeMenu === "root" \|\| root\.activeMenu === "apps"\)/)
+})
+
+test("the input shows the page hint on the Favorites page", () => {
+  assert.match(qml, /SettingsModel\.pageHint\(root\.activeMenu\)/)
 })
